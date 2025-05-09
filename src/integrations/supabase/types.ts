@@ -193,6 +193,45 @@ export type Database = {
         }
         Relationships: []
       }
+      task_dependencies: {
+        Row: {
+          created_at: string
+          dependency_task_id: string
+          dependent_task_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dependency_task_id: string
+          dependent_task_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dependency_task_id?: string
+          dependent_task_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_dependencies_dependency_task_id_fkey"
+            columns: ["dependency_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_dependent_task_id_fkey"
+            columns: ["dependent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assignee_id: string | null

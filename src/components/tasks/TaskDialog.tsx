@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,16 +39,19 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Task, NewTask } from '@/hooks/useTasks';
+import { useDependencies } from '@/hooks/useDependencies';
+import DependencySelect from './DependencySelect';
 
 interface TaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: NewTask) => void;
+  onSubmit: (data: NewTask, dependencyIds?: string[]) => void;
   boardId: string;
   columnId: string;
   isEditing?: boolean;
   task?: Task;
   title?: string;
+  allTasks?: Task[];
 }
 
 const taskFormSchema = z.object({
@@ -68,8 +71,12 @@ export function TaskDialog({
   columnId,
   isEditing = false,
   task,
-  title = "Add New Task"
+  title = "Add New Task",
+  allTasks = []
 }: TaskDialogProps) {
+  const [selectedDependencyIds, setSelectedDependencyIds] = useState<string[]>([]);
+  const { getTaskDependencies } = useDependencies(boardId);
+
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -79,6 +86,25 @@ export function TaskDialog({
       due_date: task?.due_date ? new Date(task.due_date) : undefined,
     },
   });
+
+  // Load existing dependencies when editing
+  useEffect(() => {
+    const loadDependencies = async () => {
+      if (isEditing && task) {
+        try {
+          const dependencies = await getTaskDependencies(task.id);
+          const dependencyIds = dependencies.map(dep => dep.dependency_task_id);
+          setSelectedDependencyIds(dependencyIds);
+        } catch (error) {
+          console.error("Error loading dependencies:", error);
+        }
+      }
+    };
+    
+    if (isOpen) {
+      loadDependencies();
+    }
+  }, [isOpen, isEditing, task, getTaskDependencies]);
 
   function handleSubmit(values: TaskFormValues) {
     const taskData: NewTask = {
@@ -90,8 +116,9 @@ export function TaskDialog({
       column_id: columnId,
     };
     
-    onSubmit(taskData);
+    onSubmit(taskData, selectedDependencyIds);
     form.reset();
+    setSelectedDependencyIds([]);
     onClose();
   }
 
@@ -205,6 +232,20 @@ export function TaskDialog({
                 </FormItem>
               )}
             />
+
+            {/* Dependencies selection */}
+            <FormItem>
+              <FormLabel className="text-blue-700">Dependencies</FormLabel>
+              <DependencySelect
+                boardId={boardId}
+                columnId={columnId}
+                availableTasks={allTasks}
+                selectedTaskIds={selectedDependencyIds}
+                currentTaskId={task?.id}
+                onSelectDependencies={setSelectedDependencyIds}
+              />
+              <FormMessage />
+            </FormItem>
 
             <DialogFooter className="pt-4 gap-2">
               <Button 

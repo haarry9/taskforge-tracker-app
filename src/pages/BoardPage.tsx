@@ -1,16 +1,19 @@
-import React, { useState, useCallback } from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBoards } from '@/hooks/useBoards';
 import { useTasks, Task, NewTask } from '@/hooks/useTasks';
 import { useActivities, NewActivity } from '@/hooks/useActivities';
+import { useDependencies } from '@/hooks/useDependencies';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Plus, Users, Settings, Activity, MoreHorizontal, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, Plus, Users, Settings, Activity, MoreHorizontal, ArrowLeft, Link } from 'lucide-react';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskDialog } from '@/components/tasks/TaskDialog';
 import { AddColumnDialog } from '@/components/boards/AddColumnDialog';
 import { BoardDetailsPanel } from '@/components/boards/BoardDetailsPanel';
 import ActivityPanel from '@/components/boards/ActivityPanel';
+import DependencyOverlay from '@/components/tasks/DependencyOverlay';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -31,6 +34,7 @@ export default function BoardPage() {
   const [isEditTaskDialogOpen, setIsEditTaskDialogOpen] = useState<boolean>(false);
   const [isAddColumnDialogOpen, setIsAddColumnDialogOpen] = useState<boolean>(false);
   const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState<boolean>(false);
+  const [isDependencyOverlayVisible, setIsDependencyOverlayVisible] = useState<boolean>(false);
   const [currentColumnId, setCurrentColumnId] = useState<string>("");
   const [currentTask, setCurrentTask] = useState<Task | undefined>(undefined);
 
@@ -49,6 +53,14 @@ export default function BoardPage() {
     getTasksByColumn 
   } = useTasks(boardId);
 
+  // Fetch dependencies for this board
+  const {
+    dependencies,
+    isLoading: isDependenciesLoading,
+    createDependency,
+    deleteDependency
+  } = useDependencies(boardId);
+
   // Activities hook
   const { createActivity } = useActivities(boardId);
 
@@ -61,8 +73,8 @@ export default function BoardPage() {
     setIsAddTaskDialogOpen(true);
   };
 
-  // Handle creating a new task
-  const handleCreateTask = (taskData: NewTask) => {
+  // Handle creating a new task with dependencies
+  const handleCreateTask = (taskData: NewTask, dependencyIds?: string[]) => {
     createTask(taskData, {
       onSuccess: (newTask) => {
         // Log activity when task is created
@@ -76,6 +88,33 @@ export default function BoardPage() {
             column_name: columnName
           }
         });
+        
+        // Add dependencies if provided
+        if (dependencyIds && dependencyIds.length > 0) {
+          dependencyIds.forEach(dependencyId => {
+            createDependency({
+              dependent_task_id: newTask.id,
+              dependency_task_id: dependencyId
+            }, {
+              onSuccess: () => {
+                // Log activity when dependency is created
+                const dependencyTask = tasks.find(t => t.id === dependencyId);
+                if (dependencyTask) {
+                  createActivity({
+                    board_id: boardId || "",
+                    action_type: "create",
+                    action_description: `Added dependency: "${newTask.title}" depends on "${dependencyTask.title}"`,
+                    task_id: newTask.id,
+                    metadata: {
+                      dependency_id: dependencyId,
+                      dependency_title: dependencyTask.title
+                    }
+                  });
+                }
+              }
+            });
+          });
+        }
       }
     });
   };
@@ -87,8 +126,8 @@ export default function BoardPage() {
     setIsEditTaskDialogOpen(true);
   };
   
-  // Handle updating a task
-  const handleUpdateTask = (taskData: NewTask) => {
+  // Handle updating a task with dependencies
+  const handleUpdateTask = (taskData: NewTask, dependencyIds?: string[]) => {
     if (currentTask) {
       updateTask({
         taskId: currentTask.id,
@@ -96,7 +135,6 @@ export default function BoardPage() {
           title: taskData.title,
           description: taskData.description,
           priority: taskData.priority,
-          // Fix: Convert Date object to ISO string if it exists
           due_date: taskData.due_date ? taskData.due_date.toISOString() : null
         }
       }, {
@@ -108,6 +146,68 @@ export default function BoardPage() {
             action_description: `Updated task "${taskData.title}"`,
             task_id: currentTask.id
           });
+          
+          // Handle dependencies if provided
+          if (dependencyIds) {
+            // Get current dependencies
+            const currentDeps = dependencies.filter(
+              dep => dep.dependent_task_id === currentTask.id
+            );
+            const currentDepIds = currentDeps.map(dep => dep.dependency_task_id);
+            
+            // Find dependencies to add and remove
+            const depsToAdd = dependencyIds.filter(
+              id => !currentDepIds.includes(id)
+            );
+            const depsToRemove = currentDeps.filter(
+              dep => !dependencyIds.includes(dep.dependency_task_id)
+            );
+            
+            // Add new dependencies
+            depsToAdd.forEach(depId => {
+              createDependency({
+                dependent_task_id: currentTask.id,
+                dependency_task_id: depId
+              }, {
+                onSuccess: () => {
+                  const dependencyTask = tasks.find(t => t.id === depId);
+                  if (dependencyTask) {
+                    createActivity({
+                      board_id: boardId || "",
+                      action_type: "create",
+                      action_description: `Added dependency: "${currentTask.title}" depends on "${dependencyTask.title}"`,
+                      task_id: currentTask.id,
+                      metadata: {
+                        dependency_id: depId,
+                        dependency_title: dependencyTask.title
+                      }
+                    });
+                  }
+                }
+              });
+            });
+            
+            // Remove deleted dependencies
+            depsToRemove.forEach(dep => {
+              deleteDependency(dep.id, {
+                onSuccess: () => {
+                  const dependencyTask = tasks.find(t => t.id === dep.dependency_task_id);
+                  if (dependencyTask) {
+                    createActivity({
+                      board_id: boardId || "",
+                      action_type: "delete",
+                      action_description: `Removed dependency: "${currentTask.title}" no longer depends on "${dependencyTask.title}"`,
+                      task_id: currentTask.id,
+                      metadata: {
+                        dependency_id: dep.dependency_task_id,
+                        dependency_title: dependencyTask.title
+                      }
+                    });
+                  }
+                }
+              });
+            });
+          }
         }
       });
     }
@@ -129,6 +229,38 @@ export default function BoardPage() {
             metadata: {
               column_name: columnName
             }
+          });
+        }
+      });
+    }
+  };
+
+  // Handle deleting a dependency
+  const handleDeleteDependency = (dependencyId: string) => {
+    const dependency = dependencies.find(dep => dep.id === dependencyId);
+    if (dependency) {
+      const dependentTask = tasks.find(t => t.id === dependency.dependent_task_id);
+      const dependencyTask = tasks.find(t => t.id === dependency.dependency_task_id);
+      
+      deleteDependency(dependencyId, {
+        onSuccess: () => {
+          // Log activity for dependency deletion
+          if (dependentTask && dependencyTask) {
+            createActivity({
+              board_id: boardId || "",
+              action_type: "delete",
+              action_description: `Removed dependency: "${dependentTask.title}" no longer depends on "${dependencyTask.title}"`,
+              task_id: dependentTask.id,
+              metadata: {
+                dependency_id: dependencyTask.id,
+                dependency_title: dependencyTask.title
+              }
+            });
+          }
+          
+          toast({
+            title: "Dependency removed",
+            description: "The task dependency has been removed.",
           });
         }
       });
@@ -238,7 +370,7 @@ export default function BoardPage() {
     }
   }, [tasks, columns, boardId, moveTask, createActivity, getTasksByColumn]);
   
-  if (isColumnsLoading || isTasksLoading) {
+  if (isColumnsLoading || isTasksLoading || isDependenciesLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-accent">
         <div className="text-center animate-pulse space-y-2">
@@ -288,6 +420,17 @@ export default function BoardPage() {
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Dependency Visualization Toggle Button */}
+              <Button 
+                variant={isDependencyOverlayVisible ? "default" : "outline"}
+                size="sm" 
+                className={`text-xs flex items-center gap-1 ${isDependencyOverlayVisible ? "bg-blue-600" : ""}`}
+                onClick={() => setIsDependencyOverlayVisible(!isDependencyOverlayVisible)}
+              >
+                <Link className="h-4 w-4" />
+                <span className="hidden sm:inline">Dependencies</span>
+              </Button>
+              
               {/* Activity Button */}
               {boardId && <ActivityPanel boardId={boardId} />}
               
@@ -320,6 +463,10 @@ export default function BoardPage() {
                     <Users className="h-4 w-4 mr-2" />
                     Members
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsDependencyOverlayVisible(!isDependencyOverlayVisible)}>
+                    <Link className="h-4 w-4 mr-2" />
+                    {isDependencyOverlayVisible ? "Hide Dependencies" : "Show Dependencies"}
+                  </DropdownMenuItem>
                   <DropdownMenuItem>
                     <Settings className="h-4 w-4 mr-2" />
                     Settings
@@ -331,7 +478,7 @@ export default function BoardPage() {
         </header>
         
         {/* Board Content */}
-        <div className="flex-1 overflow-x-auto p-4">
+        <div className="flex-1 overflow-x-auto p-4 relative">
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex space-x-4 h-full">
               {columns?.length === 0 ? (
@@ -463,6 +610,17 @@ export default function BoardPage() {
               )}
             </div>
           </DragDropContext>
+          
+          {/* Dependency Visualization Overlay */}
+          {isDependencyOverlayVisible && (
+            <DependencyOverlay 
+              isVisible={isDependencyOverlayVisible}
+              onClose={() => setIsDependencyOverlayVisible(false)}
+              dependencies={dependencies}
+              tasks={tasks}
+              onDeleteDependency={handleDeleteDependency}
+            />
+          )}
         </div>
       </div>
       
@@ -494,6 +652,7 @@ export default function BoardPage() {
         boardId={boardId || ""}
         columnId={currentColumnId}
         title="Add New Task"
+        allTasks={tasks}
       />
       
       <TaskDialog 
@@ -505,6 +664,7 @@ export default function BoardPage() {
         isEditing={true}
         task={currentTask}
         title="Edit Task"
+        allTasks={tasks}
       />
       
       {/* Add column dialog */}
