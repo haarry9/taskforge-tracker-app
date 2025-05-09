@@ -42,9 +42,13 @@ const Index = () => {
               Organize your work, manage projects, and reach new productivity peaks.
             </p>
             {user ? (
-              <Button as={Link} to="/dashboard">Go to Dashboard</Button>
+              <Button asChild>
+                <Link to="/dashboard">Go to Dashboard</Link>
+              </Button>
             ) : (
-              <Button as={Link} to="/auth">Get Started</Button>
+              <Button asChild>
+                <Link to="/auth">Get Started</Link>
+              </Button>
             )}
           </div>
         </Card>
