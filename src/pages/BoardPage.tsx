@@ -1,643 +1,94 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useBoards } from '@/hooks/useBoards';
-import { useTasks, Task, NewTask } from '@/hooks/useTasks';
-import { useActivities, NewActivity } from '@/hooks/useActivities';
-import { useDependencies } from '@/hooks/useDependencies';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, Plus, Users, Settings, Activity, MoreHorizontal, ArrowLeft, Link } from 'lucide-react';
-import { TaskCard } from '@/components/tasks/TaskCard';
+
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useBoardPage } from '@/hooks/useBoardPage';
+import { BoardHeader } from '@/components/boards/BoardHeader';
+import { BoardContent } from '@/components/boards/BoardContent';
+import { BoardSidePanel } from '@/components/boards/BoardSidePanel';
+import { BoardLoadingState } from '@/components/boards/BoardLoadingState';
 import { TaskDialog } from '@/components/tasks/TaskDialog';
 import { AddColumnDialog } from '@/components/boards/AddColumnDialog';
-import { BoardDetailsPanel } from '@/components/boards/BoardDetailsPanel';
-import ActivityPanel from '@/components/boards/ActivityPanel';
-import DependencyOverlay from '@/components/tasks/DependencyOverlay';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { toast } from '@/components/ui/use-toast';
 
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();
-  const { useBoardColumns, useAddColumnMutation } = useBoards();
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState<boolean>(false);
-  const [isEditTaskDialogOpen, setIsEditTaskDialogOpen] = useState<boolean>(false);
-  const [isAddColumnDialogOpen, setIsAddColumnDialogOpen] = useState<boolean>(false);
-  const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState<boolean>(false);
-  const [isDependencyOverlayVisible, setIsDependencyOverlayVisible] = useState<boolean>(false);
-  const [currentColumnId, setCurrentColumnId] = useState<string>("");
-  const [currentTask, setCurrentTask] = useState<Task | undefined>(undefined);
-
-  // Fetch columns for this board
-  const { data: columns, isLoading: isColumnsLoading, isError: isColumnsError } = useBoardColumns(boardId);
-  
-  // Fetch tasks for this board
-  const { 
-    tasks, 
-    isLoading: isTasksLoading, 
-    isError: isTasksError, 
-    createTask, 
-    updateTask, 
-    moveTask, 
-    deleteTask, 
-    getTasksByColumn 
-  } = useTasks(boardId);
-
-  // Fetch dependencies for this board
   const {
+    // State
+    isAddTaskDialogOpen,
+    isEditTaskDialogOpen,
+    isAddColumnDialogOpen,
+    isDetailsPanelOpen,
+    isDependencyOverlayVisible,
+    currentColumnId,
+    currentTask,
+    
+    // Data
+    columns,
+    tasks,
     dependencies,
-    isLoading: isDependenciesLoading,
-    createDependency,
-    deleteDependency
-  } = useDependencies(boardId);
+    board,
+    
+    // Loading states
+    isLoading,
+    isError,
+    
+    // Action handlers
+    setIsAddTaskDialogOpen,
+    setIsEditTaskDialogOpen,
+    setIsAddColumnDialogOpen,
+    setIsDetailsPanelOpen,
+    setIsDependencyOverlayVisible,
+    handleAddTaskClick,
+    handleCreateTask,
+    handleEditTask,
+    handleUpdateTask,
+    handleDeleteTask,
+    handleDeleteDependency,
+    handleAddColumn,
+    handleDragEnd,
+    getTasksByColumn
+  } = useBoardPage(boardId);
 
-  // Activities hook
-  const { createActivity } = useActivities(boardId);
-
-  // Mutation for adding a column
-  const { mutate: addColumn, isPending: isAddingColumn } = useAddColumnMutation(boardId);
-  
-  // Handle opening the add task dialog for a specific column
-  const handleAddTaskClick = (columnId: string) => {
-    setCurrentColumnId(columnId);
-    setIsAddTaskDialogOpen(true);
-  };
-
-  // Handle creating a new task with dependencies
-  const handleCreateTask = (taskData: NewTask, dependencyIds?: string[]) => {
-    createTask(taskData, {
-      onSuccess: (newTask) => {
-        // Log activity when task is created
-        const columnName = columns?.find(col => col.id === taskData.column_id)?.title || "Unknown";
-        createActivity({
-          board_id: boardId || "",
-          action_type: "create",
-          action_description: `Created task "${taskData.title}" in ${columnName}`,
-          task_id: newTask.id,
-          metadata: {
-            column_name: columnName
-          }
-        });
-        
-        // Add dependencies if provided
-        if (dependencyIds && dependencyIds.length > 0) {
-          dependencyIds.forEach(dependencyId => {
-            createDependency({
-              dependent_task_id: newTask.id,
-              dependency_task_id: dependencyId
-            }, {
-              onSuccess: () => {
-                // Log activity when dependency is created
-                const dependencyTask = tasks.find(t => t.id === dependencyId);
-                if (dependencyTask) {
-                  createActivity({
-                    board_id: boardId || "",
-                    action_type: "create",
-                    action_description: `Added dependency: "${newTask.title}" depends on "${dependencyTask.title}"`,
-                    task_id: newTask.id,
-                    metadata: {
-                      dependency_task: dependencyTask.title
-                    }
-                  });
-                }
-              }
-            });
-          });
-        }
-      }
-    });
-  };
-  
-  // Handle editing a task
-  const handleEditTask = (task: Task) => {
-    setCurrentTask(task);
-    setCurrentColumnId(task.column_id);
-    setIsEditTaskDialogOpen(true);
-  };
-  
-  // Handle updating a task with dependencies
-  const handleUpdateTask = (taskData: NewTask, dependencyIds?: string[]) => {
-    if (currentTask) {
-      updateTask({
-        taskId: currentTask.id,
-        updates: {
-          title: taskData.title,
-          description: taskData.description,
-          priority: taskData.priority,
-          due_date: taskData.due_date ? taskData.due_date.toISOString() : null
-        }
-      }, {
-        onSuccess: () => {
-          // Log activity for task update
-          createActivity({
-            board_id: boardId || "",
-            action_type: "update",
-            action_description: `Updated task "${taskData.title}"`,
-            task_id: currentTask.id
-          });
-          
-          // Handle dependencies if provided
-          if (dependencyIds) {
-            // Get current dependencies
-            const currentDeps = dependencies.filter(
-              dep => dep.dependent_task_id === currentTask.id
-            );
-            const currentDepIds = currentDeps.map(dep => dep.dependency_task_id);
-            
-            // Find dependencies to add and remove
-            const depsToAdd = dependencyIds.filter(
-              id => !currentDepIds.includes(id)
-            );
-            const depsToRemove = currentDeps.filter(
-              dep => !dependencyIds.includes(dep.dependency_task_id)
-            );
-            
-            // Add new dependencies
-            depsToAdd.forEach(depId => {
-              createDependency({
-                dependent_task_id: currentTask.id,
-                dependency_task_id: depId
-              }, {
-                onSuccess: () => {
-                  const dependencyTask = tasks.find(t => t.id === depId);
-                  if (dependencyTask) {
-                    createActivity({
-                      board_id: boardId || "",
-                      action_type: "create",
-                      action_description: `Added dependency: "${currentTask.title}" depends on "${dependencyTask.title}"`,
-                      task_id: currentTask.id,
-                      metadata: {
-                        dependency_task: dependencyTask.title
-                      }
-                    });
-                  }
-                }
-              });
-            });
-            
-            // Remove deleted dependencies
-            depsToRemove.forEach(dep => {
-              deleteDependency(dep.id, {
-                onSuccess: () => {
-                  const dependencyTask = tasks.find(t => t.id === dep.dependency_task_id);
-                  if (dependencyTask) {
-                    createActivity({
-                      board_id: boardId || "",
-                      action_type: "delete",
-                      action_description: `Removed dependency: "${currentTask.title}" no longer depends on "${dependencyTask.title}"`,
-                      task_id: currentTask.id,
-                      metadata: {
-                        dependency_task: dependencyTask.title
-                      }
-                    });
-                  }
-                }
-              });
-            });
-          }
-        }
-      });
-    }
-  };
-  
-  // Handle deleting a task
-  const handleDeleteTask = (taskId: string) => {
-    const taskToDelete = tasks.find(t => t.id === taskId);
-    if (taskToDelete) {
-      deleteTask(taskId, {
-        onSuccess: () => {
-          // Log activity for task deletion
-          const columnName = columns?.find(col => col.id === taskToDelete.column_id)?.title || "Unknown";
-          createActivity({
-            board_id: boardId || "",
-            action_type: "delete",
-            action_description: `Deleted task "${taskToDelete.title}" from ${columnName}`,
-            task_id: null, // Task is deleted, so we don't reference it
-            metadata: {
-              column_name: columnName
-            }
-          });
-        }
-      });
-    }
-  };
-
-  // Handle deleting a dependency
-  const handleDeleteDependency = (dependencyId: string) => {
-    const dependency = dependencies.find(dep => dep.id === dependencyId);
-    if (dependency) {
-      const dependentTask = tasks.find(t => t.id === dependency.dependent_task_id);
-      const dependencyTask = tasks.find(t => t.id === dependency.dependency_task_id);
-      
-      deleteDependency(dependencyId, {
-        onSuccess: () => {
-          // Log activity for dependency deletion
-          if (dependentTask && dependencyTask) {
-            createActivity({
-              board_id: boardId || "",
-              action_type: "delete",
-              action_description: `Removed dependency: "${dependentTask.title}" no longer depends on "${dependencyTask.title}"`,
-              task_id: dependentTask.id,
-              metadata: {
-                dependency_task: dependencyTask.title
-              }
-            });
-          }
-          
-          toast({
-            title: "Dependency removed",
-            description: "The task dependency has been removed.",
-          });
-        }
-      });
-    }
-  };
-
-  // Handle adding a new column
-  const handleAddColumn = (title: string) => {
-    if (boardId) {
-      addColumn(title);
-    }
-  };
-  
-  // Handle drag end event with improved error handling and logging
-  const handleDragEnd = useCallback((result: DropResult) => {
-    console.log("Drag ended with result:", result);
-    const { destination, source, draggableId } = result;
-    
-    // If there's no destination or the item was dropped back to its original position
-    if (!destination) {
-      console.log("No destination, drag cancelled");
-      return;
-    }
-    
-    if (destination.droppableId === source.droppableId && 
-        destination.index === source.index) {
-      console.log("Dropped at the same position, no change needed");
-      return;
-    }
-    
-    const taskId = draggableId;
-    const sourceColumnId = source.droppableId;
-    const destinationColumnId = destination.droppableId;
-    
-    console.log(`Moving task ${taskId} from column ${sourceColumnId} to ${destinationColumnId}`);
-    
-    const movedTask = tasks.find(task => task.id === taskId);
-    if (!movedTask) {
-      console.error("Failed to find the task being moved:", taskId);
-      toast({
-        title: "Error moving task",
-        description: "Could not find the task you're trying to move.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const sourceColumnTitle = columns?.find(col => col.id === sourceColumnId)?.title || "Unknown";
-    const destinationColumnTitle = columns?.find(col => col.id === destinationColumnId)?.title || "Unknown";
-    
-    // Calculate new position
-    const destinationTasks = getTasksByColumn(destinationColumnId);
-    let newPosition = 0;
-    
-    try {
-      if (destination.index === 0) {
-        // If dropped at the beginning
-        const firstTask = destinationTasks[0];
-        newPosition = firstTask ? firstTask.position / 2 : 0;
-      } else if (destination.index >= destinationTasks.length) {
-        // If dropped at the end
-        const lastTask = destinationTasks[destinationTasks.length - 1];
-        newPosition = lastTask ? lastTask.position + 1 : destination.index;
-      } else {
-        // If dropped in the middle
-        const beforeTask = destinationTasks[destination.index - 1];
-        const afterTask = destinationTasks[destination.index];
-        newPosition = (beforeTask.position + afterTask.position) / 2;
-      }
-      
-      console.log("Calculated new position:", newPosition);
-      
-      // Move the task
-      moveTask({
-        taskId,
-        newColumnId: destinationColumnId,
-        oldColumnId: sourceColumnId,
-        newPosition
-      }, {
-        onSuccess: () => {
-          // Only log activity if the column changed
-          if (sourceColumnId !== destinationColumnId) {
-            console.log("Logging activity for task movement");
-            createActivity({
-              board_id: boardId || "",
-              action_type: "move",
-              action_description: `Moved task "${movedTask.title}"`,
-              task_id: taskId,
-              metadata: {
-                from_column: sourceColumnTitle,
-                to_column: destinationColumnTitle
-              }
-            });
-          }
-        },
-        onError: (error) => {
-          console.error("Error moving task:", error);
-        }
-      });
-    } catch (error) {
-      console.error("Error in drag end handler:", error);
-      toast({
-        title: "Error moving task",
-        description: "There was an error moving the task. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [tasks, columns, boardId, moveTask, createActivity, getTasksByColumn]);
-  
-  if (isColumnsLoading || isTasksLoading || isDependenciesLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-accent">
-        <div className="text-center animate-pulse space-y-2">
-          <div className="h-8 w-8 bg-primary/20 rounded-full mx-auto"></div>
-          <p className="text-muted-foreground">Loading board...</p>
-        </div>
-      </div>
-    );
+  // Render loading or error state
+  if (isLoading || isError) {
+    return <BoardLoadingState isLoading={isLoading} isError={isError} />;
   }
-  
-  if (isColumnsError || isTasksError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-accent space-y-4">
-        <p className="text-destructive">Failed to load board</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          Try again
-        </Button>
-      </div>
-    );
-  }
-
-  // Find the board data from tasks array to display board info
-  const board = tasks && tasks.length > 0 
-    ? { title: "Board", description: "Loading..." } // Default values
-    : { title: "Board", description: "No tasks yet" };
 
   return (
     <div className="flex h-screen overflow-hidden bg-accent">
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-border/50 py-3 px-4 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-muted-foreground" 
-                onClick={() => navigate('/dashboard')}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div>
-                <h1 className="text-lg font-semibold truncate">{board.title}</h1>
-                <p className="text-xs text-muted-foreground truncate">{board.description}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Dependency Visualization Toggle Button */}
-              <Button 
-                variant={isDependencyOverlayVisible ? "default" : "outline"}
-                size="sm" 
-                className={`text-xs flex items-center gap-1 ${isDependencyOverlayVisible ? "bg-blue-600" : ""}`}
-                onClick={() => setIsDependencyOverlayVisible(!isDependencyOverlayVisible)}
-              >
-                <Link className="h-4 w-4" />
-                <span className="hidden sm:inline">Dependencies</span>
-              </Button>
-              
-              {/* Activity Button */}
-              {boardId && <ActivityPanel boardId={boardId} />}
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-xs hidden sm:flex items-center gap-1"
-                onClick={() => setIsDetailsPanelOpen(!isDetailsPanelOpen)}
-              >
-                <Users className="h-4 w-4" />
-                <span>Members</span>
-              </Button>
-              
-              <div className="hidden sm:block">
-                <Separator orientation="vertical" className="h-6" />
-              </div>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setIsAddColumnDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Column
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsDetailsPanelOpen(!isDetailsPanelOpen)}>
-                    <Users className="h-4 w-4 mr-2" />
-                    Members
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsDependencyOverlayVisible(!isDependencyOverlayVisible)}>
-                    <Link className="h-4 w-4 mr-2" />
-                    {isDependencyOverlayVisible ? "Hide Dependencies" : "Show Dependencies"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </header>
+        <BoardHeader 
+          boardTitle={board.title}
+          boardDescription={board.description}
+          boardId={boardId}
+          isDependencyOverlayVisible={isDependencyOverlayVisible}
+          setIsDependencyOverlayVisible={setIsDependencyOverlayVisible}
+          setIsAddColumnDialogOpen={setIsAddColumnDialogOpen}
+          setIsDetailsPanelOpen={setIsDetailsPanelOpen}
+        />
         
-        {/* Board Content */}
-        <div className="flex-1 overflow-x-auto p-4 relative">
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="flex space-x-4 h-full">
-              {columns?.length === 0 ? (
-                <div className="flex items-center justify-center w-full">
-                  <div className="text-center bg-white p-8 rounded-lg shadow-sm border border-border/40 max-w-md">
-                    <div className="bg-primary/10 h-12 w-12 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Plus className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-medium mb-2">No columns found</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Get started by creating your first column to organize tasks.
-                    </p>
-                    <Button 
-                      onClick={() => setIsAddColumnDialogOpen(true)}
-                      className="rounded-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> Add Your First Column
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                columns?.map((column) => {
-                  const columnTasks = getTasksByColumn(column.id);
-                  console.log(`Column ${column.id} has ${columnTasks.length} tasks`);
-                  
-                  return (
-                    <div 
-                      key={column.id} 
-                      className="board-column flex flex-col min-w-[300px] max-w-[300px]"
-                    >
-                      <div className="column-header text-foreground bg-gray-50 p-2 rounded-t-md">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <span className="font-medium truncate">{column.title}</span>
-                            <span className="ml-2 text-xs bg-accent px-2 py-0.5 rounded-full text-muted-foreground">
-                              {columnTasks.length}
-                            </span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-accent" 
-                            onClick={() => handleAddTaskClick(column.id)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <Droppable droppableId={column.id} type="TASK">
-                        {(provided, snapshot) => {
-                          console.log(`Rendering droppable for column ${column.id}`, provided);
-                          return (
-                            <div 
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              className={`flex-1 p-2 overflow-y-auto rounded-b-md min-h-[300px] ${
-                                snapshot.isDraggingOver ? 'bg-blue-50/50' : 'bg-gray-50'
-                              }`}
-                              data-column-id={column.id}
-                            >
-                              {columnTasks.length > 0 ? (
-                                columnTasks.map((task, index) => {
-                                  console.log(`Rendering task ${task.id} at index ${index}`);
-                                  return (
-                                    <Draggable 
-                                      key={task.id} 
-                                      draggableId={task.id} 
-                                      index={index}
-                                    >
-                                      {(provided, snapshot) => {
-                                        console.log(`Drag state for task ${task.id}:`, snapshot.isDragging);
-                                        return (
-                                          <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            {...provided.dragHandleProps}
-                                            className={`mb-3 ${snapshot.isDragging ? 'opacity-70' : ''}`}
-                                            data-task-id={task.id}
-                                          >
-                                            <TaskCard 
-                                              task={task}
-                                              onEdit={handleEditTask}
-                                              onDelete={handleDeleteTask}
-                                            />
-                                          </div>
-                                        );
-                                      }}
-                                    </Draggable>
-                                  );
-                                })
-                              ) : (
-                                <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                                  <p className="text-sm text-muted-foreground">
-                                    No tasks yet
-                                  </p>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="mt-2 text-xs" 
-                                    onClick={() => handleAddTaskClick(column.id)}
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Add task
-                                  </Button>
-                                </div>
-                              )}
-                              {provided.placeholder}
-                            </div>
-                          );
-                        }}
-                      </Droppable>
-                    </div>
-                  );
-                })
-              )}
-              
-              {columns?.length > 0 && (
-                <div className="min-w-[280px]">
-                  <Button 
-                    variant="outline" 
-                    className="h-12 flex items-center justify-center w-full border-dashed"
-                    onClick={() => setIsAddColumnDialogOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> 
-                    Add Column
-                  </Button>
-                </div>
-              )}
-            </div>
-          </DragDropContext>
-          
-          {/* Dependency Visualization Overlay */}
-          {isDependencyOverlayVisible && (
-            <DependencyOverlay 
-              isVisible={isDependencyOverlayVisible}
-              onClose={() => setIsDependencyOverlayVisible(false)}
-              dependencies={dependencies}
-              tasks={tasks}
-              onDeleteDependency={handleDeleteDependency}
-            />
-          )}
-        </div>
+        <BoardContent 
+          columns={columns}
+          tasks={tasks}
+          dependencies={dependencies}
+          getTasksByColumn={getTasksByColumn}
+          isDependencyOverlayVisible={isDependencyOverlayVisible}
+          onDragEnd={handleDragEnd}
+          onAddTask={handleAddTaskClick}
+          onEditTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
+          onAddColumn={() => setIsAddColumnDialogOpen(true)}
+          onDeleteDependency={handleDeleteDependency}
+          setIsDependencyOverlayVisible={setIsDependencyOverlayVisible}
+        />
       </div>
       
       {/* Side panel */}
-      {isDetailsPanelOpen && (
-        <div className="w-80 h-full bg-white border-l border-border/50 overflow-y-auto">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium">Board Details</h3>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6"
-                onClick={() => setIsDetailsPanelOpen(false)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </div>
-            {boardId && <BoardDetailsPanel boardId={boardId} />}
-          </div>
-        </div>
-      )}
+      <BoardSidePanel 
+        isOpen={isDetailsPanelOpen}
+        boardId={boardId || ''}
+        onClose={() => setIsDetailsPanelOpen(false)}
+      />
 
       {/* Task dialogs */}
       <TaskDialog 
