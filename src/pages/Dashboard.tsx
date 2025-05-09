@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 
 export default function Dashboard() {
@@ -19,23 +20,23 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   
   return (
-    <div className="min-h-screen bg-accent flex flex-col">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-border/50 py-3 px-4 sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-200 py-3 px-4 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2">
-            <Grid3X3 className="h-6 w-6 text-primary" />
+            <Grid3X3 className="h-6 w-6 text-blue-600" />
             <span className="font-display font-bold text-lg hidden sm:inline-block">TaskForge</span>
           </Link>
           
           {/* Search box - Desktop */}
           <div className="hidden md:flex relative max-w-md w-full mx-8">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
             <input 
               type="text" 
               placeholder="Search boards..." 
-              className="w-full bg-accent rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full bg-gray-100 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -48,13 +49,13 @@ export default function Dashboard() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuContent align="end" className="w-80 bg-white">
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <div className="py-4 text-center text-sm text-muted-foreground">
+                <div className="py-4 text-center text-sm text-gray-500">
                   No new notifications
                 </div>
               </DropdownMenuContent>
@@ -67,7 +68,7 @@ export default function Dashboard() {
                   <Plus className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white">
                 <DropdownMenuItem>New Board</DropdownMenuItem>
                 <DropdownMenuItem>New Task</DropdownMenuItem>
               </DropdownMenuContent>
@@ -77,16 +78,16 @@ export default function Dashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary" />
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <User className="h-5 w-5 text-blue-600" />
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
                     <span>My Account</span>
-                    <span className="text-xs font-normal text-muted-foreground">{user?.email}</span>
+                    <span className="text-xs font-normal text-gray-500">{user?.email}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -104,13 +105,13 @@ export default function Dashboard() {
       </header>
       
       {/* Search - Mobile */}
-      <div className="bg-white md:hidden px-4 py-3 border-b border-border/50">
+      <div className="bg-white md:hidden px-4 py-3 border-b border-gray-200">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <input 
             type="text" 
             placeholder="Search boards..." 
-            className="w-full bg-accent rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full bg-gray-100 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -121,8 +122,8 @@ export default function Dashboard() {
       <main className="flex-1 py-8 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-2xl font-display font-bold mb-1">Your Workspace</h1>
-            <p className="text-muted-foreground">Manage your projects and tasks</p>
+            <h1 className="text-2xl font-display font-bold mb-1 text-gray-800">Your Workspace</h1>
+            <p className="text-gray-500">Manage your projects and tasks</p>
           </div>
           
           <BoardsGrid />

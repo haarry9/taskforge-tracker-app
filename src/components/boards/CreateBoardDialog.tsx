@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useBoards } from "@/hooks/useBoards";
 import { useNavigate } from "react-router-dom";
+import { Separator } from "@/components/ui/separator";
 
 interface CreateBoardDialogProps {
   isOpen: boolean;
@@ -51,52 +52,62 @@ export function CreateBoardDialog({ isOpen, onClose }: CreateBoardDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[475px] bg-white border-0 shadow-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create new board</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl text-gray-800">Create new board</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Add a new board to organize your tasks and projects.
             </DialogDescription>
           </DialogHeader>
 
+          <Separator className="my-4" />
+
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title" className="text-gray-700">Board Title</Label>
               <Input
                 id="title"
                 placeholder="Enter board title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 autoFocus
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Input
+              <Label htmlFor="description" className="text-gray-700">Description (optional)</Label>
+              <Textarea
                 id="description"
                 placeholder="Enter board description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none min-h-[100px]"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="lists">Lists (comma-separated)</Label>
+              <Label htmlFor="lists" className="text-gray-700">Lists (comma-separated)</Label>
               <Input
                 id="lists"
                 placeholder="To Do, In Progress, Done"
                 value={lists}
                 onChange={(e) => setLists(e.target.value)}
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Default columns will be created if left empty
+              </p>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} 
+              className="border-gray-300 text-gray-700 hover:bg-gray-50">
               Cancel
             </Button>
-            <Button type="submit" disabled={!title.trim() || isPending}>
+            <Button type="submit" disabled={!title.trim() || isPending}
+              className="bg-blue-600 hover:bg-blue-700">
               {isPending ? "Creating..." : "Create Board"}
             </Button>
           </DialogFooter>
