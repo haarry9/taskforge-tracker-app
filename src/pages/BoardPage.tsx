@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -106,8 +105,7 @@ export default function BoardPage() {
                     action_description: `Added dependency: "${newTask.title}" depends on "${dependencyTask.title}"`,
                     task_id: newTask.id,
                     metadata: {
-                      dependency_id: dependencyId,
-                      dependency_title: dependencyTask.title
+                      dependency_task: dependencyTask.title
                     }
                   });
                 }
@@ -178,8 +176,7 @@ export default function BoardPage() {
                       action_description: `Added dependency: "${currentTask.title}" depends on "${dependencyTask.title}"`,
                       task_id: currentTask.id,
                       metadata: {
-                        dependency_id: depId,
-                        dependency_title: dependencyTask.title
+                        dependency_task: dependencyTask.title
                       }
                     });
                   }
@@ -199,8 +196,7 @@ export default function BoardPage() {
                       action_description: `Removed dependency: "${currentTask.title}" no longer depends on "${dependencyTask.title}"`,
                       task_id: currentTask.id,
                       metadata: {
-                        dependency_id: dep.dependency_task_id,
-                        dependency_title: dependencyTask.title
+                        dependency_task: dependencyTask.title
                       }
                     });
                   }
@@ -252,8 +248,7 @@ export default function BoardPage() {
               action_description: `Removed dependency: "${dependentTask.title}" no longer depends on "${dependencyTask.title}"`,
               task_id: dependentTask.id,
               metadata: {
-                dependency_id: dependencyTask.id,
-                dependency_title: dependencyTask.title
+                dependency_task: dependencyTask.title
               }
             });
           }

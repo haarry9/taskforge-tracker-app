@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -25,13 +24,29 @@ export const useDependencies = (boardId?: string) => {
   const fetchDependencies = async (boardId: string): Promise<TaskDependency[]> => {
     if (!user || !boardId) return [];
     
-    // We join with tasks table to filter dependencies by board_id
+    // First get all task IDs belonging to this board
+    const { data: taskIds, error: taskError } = await supabase
+      .from("tasks")
+      .select("id")
+      .eq("board_id", boardId);
+      
+    if (taskError) {
+      console.error("Error fetching task IDs:", taskError);
+      return [];
+    }
+    
+    if (!taskIds || taskIds.length === 0) {
+      return [];
+    }
+    
+    // Extract the IDs into an array
+    const ids = taskIds.map(task => task.id);
+    
+    // Then get dependencies where the dependent_task_id is in our list
     const { data, error } = await supabase
       .from("task_dependencies")
       .select("*")
-      .in("dependent_task_id", function(query) {
-        return query.from("tasks").select("id").eq("board_id", boardId);
-      });
+      .in("dependent_task_id", ids);
 
     if (error) {
       console.error("Error fetching dependencies:", error);
