@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -349,15 +348,14 @@ export default function BoardPage() {
                         </div>
                       </div>
                       
-                      <Droppable droppableId={column.id}>
+                      <Droppable droppableId={column.id} type="TASK">
                         {(provided, snapshot) => (
                           <div 
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            className={`flex-1 p-2 overflow-y-auto rounded-b-md ${
+                            className={`flex-1 p-2 overflow-y-auto rounded-b-md min-h-[300px] ${
                               snapshot.isDraggingOver ? 'bg-blue-50/50' : 'bg-gray-50'
                             }`}
-                            style={{ minHeight: "300px" }}
                           >
                             {columnTasks.length > 0 ? (
                               columnTasks.map((task, index) => (
@@ -371,7 +369,7 @@ export default function BoardPage() {
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       {...provided.dragHandleProps}
-                                      className={`${snapshot.isDragging ? 'opacity-70' : ''}`}
+                                      className={`mb-3 ${snapshot.isDragging ? 'opacity-70' : ''}`}
                                     >
                                       <TaskCard 
                                         task={task}
