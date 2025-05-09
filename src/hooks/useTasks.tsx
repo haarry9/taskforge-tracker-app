@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -14,6 +15,7 @@ export type Task = {
   position: number;
   created_at: string;
   updated_at: string;
+  assignee_id?: string | null;
 };
 
 export type NewTask = {
@@ -24,6 +26,7 @@ export type NewTask = {
   board_id: string;
   column_id: string;
   position?: number;
+  assignee_id?: string | null;
 };
 
 export const useTasks = (boardId?: string) => {
@@ -111,6 +114,10 @@ export const useTasks = (boardId?: string) => {
 
   const updateTask = async ({ taskId, updates }: { taskId: string; updates: Partial<Omit<Task, 'id' | 'created_at'>> }): Promise<Task> => {
     if (!user) throw new Error("User not authenticated");
+    if (!taskId) throw new Error("Task ID is required");
+    
+    console.log("Updating task with ID:", taskId);
+    console.log("Updates:", updates);
 
     // Format the due date properly for Supabase if it exists
     const formattedUpdates = {
@@ -149,6 +156,7 @@ export const useTasks = (boardId?: string) => {
 
   const deleteTask = async (taskId: string): Promise<void> => {
     if (!user) throw new Error("User not authenticated");
+    if (!taskId) throw new Error("Task ID is required");
 
     const { error } = await supabase
       .from("tasks")

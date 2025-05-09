@@ -23,6 +23,25 @@ export type BoardColumn = {
   updated_at: string;
 };
 
+export type BoardMember = {
+  id: string;
+  user_id: string;
+  board_id: string;
+  role: "manager" | "member" | "guest";
+  email?: string;
+  invitation_status: "pending" | "accepted" | "declined";
+  invited_at: string;
+  accepted_at?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NewBoardMember = {
+  email: string;
+  role: "member" | "guest";
+  board_id: string;
+};
+
 export type NewBoard = {
   title: string;
   description?: string;
@@ -36,9 +55,35 @@ export const useBoards = () => {
   const fetchBoards = async (): Promise<Board[]> => {
     if (!user) return [];
     
+    // Get boards where the user is a member (any role)
+    const { data: membershipData, error: membershipError } = await supabase
+      .from("board_members")
+      .select("board_id")
+      .eq("user_id", user.id)
+      .eq("invitation_status", "accepted");
+
+    if (membershipError) {
+      console.error("Error fetching board memberships:", membershipError);
+      toast({
+        title: "Error fetching boards",
+        description: membershipError.message,
+        variant: "destructive",
+      });
+      throw membershipError;
+    }
+
+    // Extract board IDs from memberships
+    const boardIds = membershipData?.map(membership => membership.board_id) || [];
+    
+    if (boardIds.length === 0) {
+      return [];
+    }
+
+    // Fetch boards using the IDs we found
     const { data, error } = await supabase
       .from("boards")
       .select("*")
+      .in("id", boardIds)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -179,11 +224,100 @@ export const useBoards = () => {
     return data;
   };
 
+  // Function to invite a new member to a board
+  const inviteBoardMember = async (newMember: NewBoardMember): Promise<BoardMember> => {
+    if (!user) throw new Error("User not authenticated");
+    
+    // First check if a user with this email exists
+    const { data: userData, error: userError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", newMember.email)
+      .maybeSingle();
+    
+    let userId = userData?.id;
+    
+    // If no user found with this email, we'll create just an invitation
+    if (!userId) {
+      console.log("No user found with email:", newMember.email);
+    }
+    
+    // Insert the member record
+    const { data, error } = await supabase
+      .from("board_members")
+      .insert([{
+        user_id: userId || user.id, // If no user found, use current user temporarily (will be updated when user registers)
+        board_id: newMember.board_id,
+        role: newMember.role,
+        email: newMember.email,
+        invitation_status: userId ? 'pending' : 'pending' // If user exists, it's pending; otherwise it's pending too
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      // Check for duplicate invitations
+      if (error.code === '23505') { // Unique violation
+        toast({
+          title: "Invitation already sent",
+          description: "This user has already been invited to this board.",
+          variant: "destructive",
+        });
+      } else {
+        console.error("Error inviting member:", error);
+        toast({
+          title: "Error inviting member",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      throw error;
+    }
+
+    toast({
+      title: "Invitation sent",
+      description: `An invitation has been sent to ${newMember.email}.`,
+    });
+
+    return data;
+  };
+
+  // Function to fetch members of a board
+  const fetchBoardMembers = async (boardId: string): Promise<BoardMember[]> => {
+    if (!user || !boardId) return [];
+
+    const { data, error } = await supabase
+      .from("board_members")
+      .select("*")
+      .eq("board_id", boardId);
+
+    if (error) {
+      console.error("Error fetching board members:", error);
+      toast({
+        title: "Error fetching members",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+
+    return data || [];
+  };
+
   // Hook to get columns for a specific board
   const useBoardColumns = (boardId: string | undefined) => {
     return useQuery({
       queryKey: ["boardColumns", boardId],
       queryFn: () => boardId ? fetchBoardColumns(boardId) : Promise.resolve([]),
+      enabled: !!boardId && !!user,
+    });
+  };
+
+  // Hook to get members of a board
+  const useBoardMembers = (boardId: string | undefined) => {
+    return useQuery({
+      queryKey: ["boardMembers", boardId],
+      queryFn: () => boardId ? fetchBoardMembers(boardId) : Promise.resolve([]),
       enabled: !!boardId && !!user,
     });
   };
@@ -194,6 +328,17 @@ export const useBoards = () => {
       mutationFn: (title: string) => boardId ? addBoardColumn(boardId, title) : Promise.reject("No board ID provided"),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["boardColumns", boardId] });
+      },
+    });
+  };
+
+  // Mutation for inviting a new member
+  const useInviteMemberMutation = (boardId: string | undefined) => {
+    return useMutation({
+      mutationFn: (memberData: Omit<NewBoardMember, "board_id">) => 
+        boardId ? inviteBoardMember({ ...memberData, board_id: boardId }) : Promise.reject("No board ID provided"),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["boardMembers", boardId] });
       },
     });
   };
@@ -220,5 +365,7 @@ export const useBoards = () => {
     isPending: createBoardMutation.isPending,
     useBoardColumns,
     useAddColumnMutation,
+    useBoardMembers,
+    useInviteMemberMutation,
   };
 };

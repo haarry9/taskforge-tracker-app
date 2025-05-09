@@ -44,6 +44,53 @@ export type Database = {
           },
         ]
       }
+      board_members: {
+        Row: {
+          accepted_at: string | null
+          board_id: string
+          created_at: string | null
+          email: string | null
+          id: string
+          invitation_status: string | null
+          invited_at: string | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          board_id: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          invitation_status?: string | null
+          invited_at?: string | null
+          role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          board_id?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          invitation_status?: string | null
+          invited_at?: string | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_members_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boards: {
         Row: {
           created_at: string
@@ -100,6 +147,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assignee_id: string | null
           board_id: string
           column_id: string
           created_at: string
@@ -112,6 +160,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assignee_id?: string | null
           board_id: string
           column_id: string
           created_at?: string
@@ -124,6 +173,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assignee_id?: string | null
           board_id?: string
           column_id?: string
           created_at?: string
@@ -157,7 +207,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_board_access: {
+        Args: { board_id_param: string; min_role: string }
+        Returns: boolean
+      }
+      check_invitation_update: {
+        Args: { board_member_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
