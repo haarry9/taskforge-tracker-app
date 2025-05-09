@@ -58,7 +58,8 @@ export default function BoardPage() {
           title: taskData.title,
           description: taskData.description,
           priority: taskData.priority,
-          due_date: taskData.due_date
+          // Fix: Convert Date object to ISO string if it exists
+          due_date: taskData.due_date ? taskData.due_date.toISOString() : null
         }
       });
     }

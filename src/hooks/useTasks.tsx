@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -110,15 +109,12 @@ export const useTasks = (boardId?: string) => {
     };
   };
 
-  const updateTask = async (taskId: string, updates: Partial<Omit<Task, 'id' | 'created_at'>>): Promise<Task> => {
+  const updateTask = async ({ taskId, updates }: { taskId: string; updates: Partial<Omit<Task, 'id' | 'created_at'>> }): Promise<Task> => {
     if (!user) throw new Error("User not authenticated");
 
     // Format the due date properly for Supabase if it exists
     const formattedUpdates = {
       ...updates,
-      due_date: updates.due_date && typeof updates.due_date === 'object' 
-        ? (updates.due_date as Date).toISOString() 
-        : updates.due_date,
       updated_at: new Date().toISOString(),
     };
 
