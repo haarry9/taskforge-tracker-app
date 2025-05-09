@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -20,6 +19,7 @@ export type Activity = {
     old_value?: string;
     new_value?: string;
     assignee_name?: string;
+    dependency_task?: string;
   } | null;
 };
 
@@ -36,6 +36,7 @@ export type NewActivity = {
     old_value?: string;
     new_value?: string;
     assignee_name?: string;
+    dependency_task?: string;
   } | null;
 };
 
