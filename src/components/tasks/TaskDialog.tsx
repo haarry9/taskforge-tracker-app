@@ -71,7 +71,9 @@ export function TaskDialog({
 
   function handleSubmit(values: TaskFormValues) {
     const taskData: NewTask = {
-      ...values,
+      title: values.title,  // Ensure title is explicitly assigned
+      description: values.description,
+      priority: values.priority,
       board_id: boardId,
       column_id: columnId,
     };

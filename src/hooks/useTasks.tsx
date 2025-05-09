@@ -48,7 +48,11 @@ export const useTasks = (boardId?: string) => {
       throw error;
     }
 
-    return data || [];
+    // Cast the data to ensure priority is of the correct type
+    return (data || []).map(task => ({
+      ...task,
+      priority: task.priority as "Low" | "Medium" | "High"
+    }));
   };
 
   const createTask = async (newTask: NewTask): Promise<Task> => {
@@ -91,7 +95,11 @@ export const useTasks = (boardId?: string) => {
       description: "Your task has been created successfully.",
     });
 
-    return data;
+    // Cast the data to ensure priority is of the correct type
+    return {
+      ...data,
+      priority: data.priority as "Low" | "Medium" | "High"
+    };
   };
 
   const updateTask = async (taskId: string, updates: Partial<Omit<Task, 'id' | 'created_at'>>): Promise<Task> => {
@@ -119,7 +127,11 @@ export const useTasks = (boardId?: string) => {
       description: "Your task has been updated successfully.",
     });
 
-    return data;
+    // Cast the data to ensure priority is of the correct type
+    return {
+      ...data,
+      priority: data.priority as "Low" | "Medium" | "High"
+    };
   };
 
   const deleteTask = async (taskId: string): Promise<void> => {
