@@ -109,7 +109,7 @@ export const useBoards = () => {
     return boardData;
   };
 
-  // New function to fetch columns for a specific board
+  // Function to fetch columns for a specific board
   const fetchBoardColumns = async (boardId: string): Promise<BoardColumn[]> => {
     if (!user) return [];
 
@@ -132,12 +132,69 @@ export const useBoards = () => {
     return data || [];
   };
 
-  // New hook to get columns for a specific board
+  // New function to add a column to a board
+  const addBoardColumn = async (boardId: string, title: string): Promise<BoardColumn> => {
+    if (!user) throw new Error("User not authenticated");
+    
+    // Get the current highest position
+    const { data: columns, error: countError } = await supabase
+      .from("board_columns")
+      .select("*")
+      .eq("board_id", boardId)
+      .order("position", { ascending: false });
+      
+    if (countError) {
+      console.error("Error fetching columns:", countError);
+      throw countError;
+    }
+    
+    const position = columns && columns.length > 0 ? columns[0].position + 1 : 0;
+
+    // Insert the new column
+    const { data, error } = await supabase
+      .from("board_columns")
+      .insert([{
+        board_id: boardId,
+        title,
+        position
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding column:", error);
+      toast({
+        title: "Error adding column",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+
+    toast({
+      title: "Column added",
+      description: "The column has been added successfully.",
+    });
+
+    return data;
+  };
+
+  // Hook to get columns for a specific board
   const useBoardColumns = (boardId: string | undefined) => {
     return useQuery({
       queryKey: ["boardColumns", boardId],
       queryFn: () => boardId ? fetchBoardColumns(boardId) : Promise.resolve([]),
       enabled: !!boardId && !!user,
+    });
+  };
+
+  // Mutation for adding a new column
+  const useAddColumnMutation = (boardId: string | undefined) => {
+    return useMutation({
+      mutationFn: (title: string) => boardId ? addBoardColumn(boardId, title) : Promise.reject("No board ID provided"),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["boardColumns", boardId] });
+      },
     });
   };
 
@@ -162,5 +219,6 @@ export const useBoards = () => {
     createBoard: createBoardMutation.mutate,
     isPending: createBoardMutation.isPending,
     useBoardColumns,
+    useAddColumnMutation,
   };
 };

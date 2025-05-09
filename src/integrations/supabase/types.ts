@@ -98,6 +98,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          board_id: string
+          column_id: string
+          created_at: string
+          description: string | null
+          id: string
+          position: number
+          priority: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          board_id: string
+          column_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          priority: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string
+          column_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          priority?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "board_columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
