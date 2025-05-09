@@ -11,6 +11,7 @@ export type Task = {
   title: string;
   description: string | null;
   priority: "Low" | "Medium" | "High";
+  due_date?: string | null;
   position: number;
   created_at: string;
   updated_at: string;
@@ -20,6 +21,7 @@ export type NewTask = {
   title: string;
   description?: string;
   priority: "Low" | "Medium" | "High";
+  due_date?: Date | null;
   board_id: string;
   column_id: string;
   position?: number;
@@ -58,25 +60,31 @@ export const useTasks = (boardId?: string) => {
   const createTask = async (newTask: NewTask): Promise<Task> => {
     if (!user) throw new Error("User not authenticated");
     
+    // Format the due date properly for Supabase if it exists
+    const formattedTask = {
+      ...newTask,
+      due_date: newTask.due_date ? newTask.due_date.toISOString() : null,
+    };
+    
     // If position is not provided, get the count of tasks in the column
     // and use that as the new position
-    if (newTask.position === undefined) {
+    if (formattedTask.position === undefined) {
       const { count, error: countError } = await supabase
         .from("tasks")
         .select("*", { count: 'exact', head: true })
-        .eq("column_id", newTask.column_id);
+        .eq("column_id", formattedTask.column_id);
         
       if (countError) {
         console.error("Error counting tasks:", countError);
         throw countError;
       }
       
-      newTask.position = count || 0;
+      formattedTask.position = count || 0;
     }
 
     const { data, error } = await supabase
       .from("tasks")
-      .insert([newTask])
+      .insert([formattedTask])
       .select()
       .single();
 
@@ -105,9 +113,18 @@ export const useTasks = (boardId?: string) => {
   const updateTask = async (taskId: string, updates: Partial<Omit<Task, 'id' | 'created_at'>>): Promise<Task> => {
     if (!user) throw new Error("User not authenticated");
 
+    // Format the due date properly for Supabase if it exists
+    const formattedUpdates = {
+      ...updates,
+      due_date: updates.due_date && typeof updates.due_date === 'object' 
+        ? (updates.due_date as Date).toISOString() 
+        : updates.due_date,
+      updated_at: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from("tasks")
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(formattedUpdates)
       .eq("id", taskId)
       .select()
       .single();

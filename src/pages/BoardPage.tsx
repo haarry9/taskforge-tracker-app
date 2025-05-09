@@ -57,7 +57,8 @@ export default function BoardPage() {
         updates: {
           title: taskData.title,
           description: taskData.description,
-          priority: taskData.priority
+          priority: taskData.priority,
+          due_date: taskData.due_date
         }
       });
     }
@@ -95,50 +96,53 @@ export default function BoardPage() {
     : { title: "Board", description: "No tasks yet" };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b border-blue-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-bold text-blue-800">Board View</h1>
+            <p className="text-sm text-blue-600 hidden sm:block">
+              {board.description && board.description}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
               size="sm" 
-              className="flex items-center" 
+              className="flex items-center text-blue-600 hover:text-blue-800 hover:bg-blue-50" 
               onClick={() => navigate('/dashboard')}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to Dashboard
+              Dashboard
             </Button>
-            <h1 className="text-xl font-bold">Board View</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
+            <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
           </div>
         </div>
       </header>
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Board header with actions and info */}
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex items-center gap-2">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Board header with actions and info - SWAPPED POSITIONS */}
+        <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
+          <div className="flex flex-col">
+            <h2 className="text-2xl font-bold text-blue-800">{board.title}</h2>
+            {board.description && (
+              <p className="text-sm text-blue-600 sm:hidden">{board.description}</p>
+            )}
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
             <Button 
               onClick={() => setIsAddColumnDialogOpen(true)}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 rounded-full"
             >
               <Plus className="h-4 w-4" /> Add Column
             </Button>
-            <Button variant="outline" className="flex items-center gap-1">
+            <Button variant="outline" className="flex items-center gap-1 border-blue-300 text-blue-700 hover:bg-blue-50 rounded-full">
               <Users className="h-4 w-4" /> Members
             </Button>
-            <Button variant="outline" className="flex items-center gap-1">
+            <Button variant="outline" className="flex items-center gap-1 border-blue-300 text-blue-700 hover:bg-blue-50 rounded-full">
               <Settings className="h-4 w-4" /> Settings
             </Button>
-          </div>
-          
-          <div className="text-right">
-            <h2 className="text-xl font-bold">{board.title}</h2>
-            {board.description && (
-              <p className="text-sm text-muted-foreground">{board.description}</p>
-            )}
           </div>
         </div>
         
@@ -150,14 +154,14 @@ export default function BoardPage() {
             return (
               <div 
                 key={column.id} 
-                className="flex-shrink-0 w-80 bg-white rounded-lg shadow-sm border"
+                className="flex-shrink-0 w-80 bg-white rounded-lg shadow-sm border border-blue-100"
               >
-                <div className="p-3 font-medium bg-gray-50 border-b rounded-t-lg flex justify-between items-center">
-                  <span>{column.title}</span>
+                <div className="p-3 font-medium bg-blue-50 border-b border-blue-100 rounded-t-lg flex justify-between items-center">
+                  <span className="text-blue-800">{column.title}</span>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-8 w-8" 
+                    className="h-8 w-8 text-blue-600 hover:bg-blue-100 hover:text-blue-800" 
                     onClick={() => handleAddTaskClick(column.id)}
                   >
                     <Plus className="h-4 w-4" />
@@ -175,7 +179,7 @@ export default function BoardPage() {
                       />
                     ))
                   ) : (
-                    <div className="text-center text-sm text-muted-foreground p-4">
+                    <div className="text-center text-sm text-blue-400 p-4 italic">
                       No tasks yet
                     </div>
                   )}
@@ -187,10 +191,10 @@ export default function BoardPage() {
           {columns?.length === 0 && (
             <div className="w-full flex items-center justify-center">
               <div className="text-center">
-                <p className="text-muted-foreground mb-4">No columns found for this board.</p>
+                <p className="text-blue-500 mb-4">No columns found for this board.</p>
                 <Button 
                   onClick={() => setIsAddColumnDialogOpen(true)}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 rounded-full"
                 >
                   <Plus className="h-4 w-4" /> Add Your First Column
                 </Button>
