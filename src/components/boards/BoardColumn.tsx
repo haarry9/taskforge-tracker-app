@@ -4,7 +4,7 @@ import { Droppable, Draggable } from 'react-beautiful-dnd';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { TaskCard } from '@/components/tasks/TaskCard';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/types/task-types';
 import { cn } from '@/lib/utils';
 
 interface BoardColumnProps {

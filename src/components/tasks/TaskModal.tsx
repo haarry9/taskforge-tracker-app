@@ -16,7 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, User } from 'lucide-react';
 import { format } from 'date-fns';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/types/task-types';
 import { useBoards, BoardMember } from '@/hooks/useBoards';
 
 interface TaskModalProps {

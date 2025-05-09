@@ -1,14 +1,13 @@
-
 import React from 'react';
 import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/types/task-types';
 import { BoardColumn } from './BoardColumn';
 import { EmptyBoardState } from './EmptyBoardState';
 import { BoardColumn as BoardColumnType } from '@/hooks/useBoards';
 import DependencyOverlay from '@/components/tasks/DependencyOverlay';
-import { TaskDependency } from '@/hooks/useDependencies';
+import { TaskDependency } from '@/types/dependency-types';
 
 interface BoardContentProps {
   columns: BoardColumnType[] | undefined;

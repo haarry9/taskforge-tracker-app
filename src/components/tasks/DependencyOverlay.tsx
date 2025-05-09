@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { X, Info } from 'lucide-react';
 import {
@@ -9,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Task } from '@/hooks/useTasks';
+import { Task } from '@/types/task-types';
 import { TaskDependency } from '@/types/dependency-types';
 
 interface DependencyOverlayProps {

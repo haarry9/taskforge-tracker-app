@@ -38,7 +38,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Task, NewTask } from '@/hooks/useTasks';
+import { Task, NewTask } from '@/types/task-types';
 import { useDependencies } from '@/hooks/useDependencies';
 import DependencySelect from './DependencySelect';
 
