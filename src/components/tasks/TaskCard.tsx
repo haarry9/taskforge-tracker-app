@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-import { MoreHorizontal, Calendar } from 'lucide-react';
+import { MoreHorizontal, Calendar, GripVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,11 +49,12 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   return (
     <Card 
       className={cn(
-        "mb-3 border shadow-sm transition-all duration-200 rotate-0 hover:-rotate-1",
+        "relative border shadow-sm transition-all duration-200 rotate-0 hover:-rotate-1 cursor-grab active:cursor-grabbing",
         getStickyNoteColor(task.priority),
         "transform-gpu"
       )}
     >
+      <div className="absolute top-0 left-0 w-full h-full opacity-0 hover:opacity-10 bg-black z-10"></div>
       <CardContent className="p-3 space-y-2">
         <div className="flex items-start justify-between">
           <h3 className="font-medium text-gray-800">{task.title}</h3>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBoards } from '@/hooks/useBoards';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { toast } from '@/components/ui/use-toast';
 
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();
@@ -141,14 +142,20 @@ export default function BoardPage() {
     }
   };
   
-  // Handle drag end event
-  const handleDragEnd = (result: DropResult) => {
+  // Handle drag end event with improved error handling and logging
+  const handleDragEnd = useCallback((result: DropResult) => {
+    console.log("Drag ended with result:", result);
     const { destination, source, draggableId } = result;
     
     // If there's no destination or the item was dropped back to its original position
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-         destination.index === source.index)) {
+    if (!destination) {
+      console.log("No destination, drag cancelled");
+      return;
+    }
+    
+    if (destination.droppableId === source.droppableId && 
+        destination.index === source.index) {
+      console.log("Dropped at the same position, no change needed");
       return;
     }
     
@@ -156,8 +163,18 @@ export default function BoardPage() {
     const sourceColumnId = source.droppableId;
     const destinationColumnId = destination.droppableId;
     
+    console.log(`Moving task ${taskId} from column ${sourceColumnId} to ${destinationColumnId}`);
+    
     const movedTask = tasks.find(task => task.id === taskId);
-    if (!movedTask) return;
+    if (!movedTask) {
+      console.error("Failed to find the task being moved:", taskId);
+      toast({
+        title: "Error moving task",
+        description: "Could not find the task you're trying to move.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const sourceColumnTitle = columns?.find(col => col.id === sourceColumnId)?.title || "Unknown";
     const destinationColumnTitle = columns?.find(col => col.id === destinationColumnId)?.title || "Unknown";
@@ -166,45 +183,60 @@ export default function BoardPage() {
     const destinationTasks = getTasksByColumn(destinationColumnId);
     let newPosition = 0;
     
-    if (destination.index === 0) {
-      // If dropped at the beginning
-      const firstTask = destinationTasks[0];
-      newPosition = firstTask ? firstTask.position / 2 : 0;
-    } else if (destination.index >= destinationTasks.length) {
-      // If dropped at the end
-      const lastTask = destinationTasks[destinationTasks.length - 1];
-      newPosition = lastTask ? lastTask.position + 1 : destination.index;
-    } else {
-      // If dropped in the middle
-      const beforeTask = destinationTasks[destination.index - 1];
-      const afterTask = destinationTasks[destination.index];
-      newPosition = (beforeTask.position + afterTask.position) / 2;
-    }
-    
-    // Move the task
-    moveTask({
-      taskId,
-      newColumnId: destinationColumnId,
-      oldColumnId: sourceColumnId,
-      newPosition
-    }, {
-      onSuccess: () => {
-        // Only log activity if the column changed
-        if (sourceColumnId !== destinationColumnId) {
-          createActivity({
-            board_id: boardId || "",
-            action_type: "move",
-            action_description: `Moved task "${movedTask.title}"`,
-            task_id: taskId,
-            metadata: {
-              from_column: sourceColumnTitle,
-              to_column: destinationColumnTitle
-            }
-          });
-        }
+    try {
+      if (destination.index === 0) {
+        // If dropped at the beginning
+        const firstTask = destinationTasks[0];
+        newPosition = firstTask ? firstTask.position / 2 : 0;
+      } else if (destination.index >= destinationTasks.length) {
+        // If dropped at the end
+        const lastTask = destinationTasks[destinationTasks.length - 1];
+        newPosition = lastTask ? lastTask.position + 1 : destination.index;
+      } else {
+        // If dropped in the middle
+        const beforeTask = destinationTasks[destination.index - 1];
+        const afterTask = destinationTasks[destination.index];
+        newPosition = (beforeTask.position + afterTask.position) / 2;
       }
-    });
-  };
+      
+      console.log("Calculated new position:", newPosition);
+      
+      // Move the task
+      moveTask({
+        taskId,
+        newColumnId: destinationColumnId,
+        oldColumnId: sourceColumnId,
+        newPosition
+      }, {
+        onSuccess: () => {
+          // Only log activity if the column changed
+          if (sourceColumnId !== destinationColumnId) {
+            console.log("Logging activity for task movement");
+            createActivity({
+              board_id: boardId || "",
+              action_type: "move",
+              action_description: `Moved task "${movedTask.title}"`,
+              task_id: taskId,
+              metadata: {
+                from_column: sourceColumnTitle,
+                to_column: destinationColumnTitle
+              }
+            });
+          }
+        },
+        onError: (error) => {
+          console.error("Error moving task:", error);
+        }
+      });
+    } catch (error) {
+      console.error("Error in drag end handler:", error);
+      toast({
+        title: "Error moving task",
+        description: "There was an error moving the task. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [tasks, columns, boardId, moveTask, createActivity, getTasksByColumn]);
   
   if (isColumnsLoading || isTasksLoading) {
     return (
@@ -323,6 +355,7 @@ export default function BoardPage() {
               ) : (
                 columns?.map((column) => {
                   const columnTasks = getTasksByColumn(column.id);
+                  console.log(`Column ${column.id} has ${columnTasks.length} tasks`);
                   
                   return (
                     <div 
@@ -349,56 +382,67 @@ export default function BoardPage() {
                       </div>
                       
                       <Droppable droppableId={column.id} type="TASK">
-                        {(provided, snapshot) => (
-                          <div 
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className={`flex-1 p-2 overflow-y-auto rounded-b-md min-h-[300px] ${
-                              snapshot.isDraggingOver ? 'bg-blue-50/50' : 'bg-gray-50'
-                            }`}
-                          >
-                            {columnTasks.length > 0 ? (
-                              columnTasks.map((task, index) => (
-                                <Draggable 
-                                  key={task.id} 
-                                  draggableId={task.id} 
-                                  index={index}
-                                >
-                                  {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className={`mb-3 ${snapshot.isDragging ? 'opacity-70' : ''}`}
+                        {(provided, snapshot) => {
+                          console.log(`Rendering droppable for column ${column.id}`, provided);
+                          return (
+                            <div 
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={`flex-1 p-2 overflow-y-auto rounded-b-md min-h-[300px] ${
+                                snapshot.isDraggingOver ? 'bg-blue-50/50' : 'bg-gray-50'
+                              }`}
+                              data-column-id={column.id}
+                            >
+                              {columnTasks.length > 0 ? (
+                                columnTasks.map((task, index) => {
+                                  console.log(`Rendering task ${task.id} at index ${index}`);
+                                  return (
+                                    <Draggable 
+                                      key={task.id} 
+                                      draggableId={task.id} 
+                                      index={index}
                                     >
-                                      <TaskCard 
-                                        task={task}
-                                        onEdit={handleEditTask}
-                                        onDelete={handleDeleteTask}
-                                      />
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))
-                            ) : (
-                              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                                <p className="text-sm text-muted-foreground">
-                                  No tasks yet
-                                </p>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="mt-2 text-xs" 
-                                  onClick={() => handleAddTaskClick(column.id)}
-                                >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Add task
-                                </Button>
-                              </div>
-                            )}
-                            {provided.placeholder}
-                          </div>
-                        )}
+                                      {(provided, snapshot) => {
+                                        console.log(`Drag state for task ${task.id}:`, snapshot.isDragging);
+                                        return (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            className={`mb-3 ${snapshot.isDragging ? 'opacity-70' : ''}`}
+                                            data-task-id={task.id}
+                                          >
+                                            <TaskCard 
+                                              task={task}
+                                              onEdit={handleEditTask}
+                                              onDelete={handleDeleteTask}
+                                            />
+                                          </div>
+                                        );
+                                      }}
+                                    </Draggable>
+                                  );
+                                })
+                              ) : (
+                                <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                                  <p className="text-sm text-muted-foreground">
+                                    No tasks yet
+                                  </p>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="mt-2 text-xs" 
+                                    onClick={() => handleAddTaskClick(column.id)}
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add task
+                                  </Button>
+                                </div>
+                              )}
+                              {provided.placeholder}
+                            </div>
+                          );
+                        }}
                       </Droppable>
                     </div>
                   );

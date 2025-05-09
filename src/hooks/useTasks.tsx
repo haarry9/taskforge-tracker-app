@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -167,34 +166,64 @@ export const useTasks = (boardId?: string) => {
   }): Promise<Task> => {
     if (!user) throw new Error("User not authenticated");
     
+    console.log("Moving task:", taskId);
+    console.log("From column:", oldColumnId, "to column:", newColumnId);
+    console.log("New position:", newPosition);
+    
     const updates = {
       column_id: newColumnId,
       position: newPosition,
       updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
-      .from("tasks")
-      .update(updates)
-      .eq("id", taskId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error moving task:", error);
-      toast({
-        title: "Error moving task",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
+    // Optimistic update
+    const previousTasks = queryClient.getQueryData<Task[]>(["tasks", boardId]);
+    if (previousTasks) {
+      const updatedTasks = previousTasks.map(task => 
+        task.id === taskId 
+          ? { ...task, ...updates } 
+          : task
+      );
+      queryClient.setQueryData(["tasks", boardId], updatedTasks);
     }
 
-    // Cast the data to ensure priority is of the correct type
-    return {
-      ...data,
-      priority: data.priority as "Low" | "Medium" | "High"
-    };
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .update(updates)
+        .eq("id", taskId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error moving task:", error);
+        
+        // Revert optimistic update on error
+        if (previousTasks) {
+          queryClient.setQueryData(["tasks", boardId], previousTasks);
+        }
+        
+        toast({
+          title: "Error moving task",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      // Cast the data to ensure priority is of the correct type
+      return {
+        ...data,
+        priority: data.priority as "Low" | "Medium" | "High"
+      };
+    } catch (error) {
+      console.error("Unexpected error moving task:", error);
+      // Revert optimistic update on any error
+      if (previousTasks) {
+        queryClient.setQueryData(["tasks", boardId], previousTasks);
+      }
+      throw error;
+    }
   };
 
   const deleteTask = async (taskId: string): Promise<void> => {
@@ -247,6 +276,14 @@ export const useTasks = (boardId?: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
     },
+    onError: (error) => {
+      console.error("Move task mutation error:", error);
+      toast({
+        title: "Failed to move task",
+        description: "There was an error moving the task. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   const deleteTaskMutation = useMutation({
@@ -270,7 +307,9 @@ export const useTasks = (boardId?: string) => {
     isPendingDelete: deleteTaskMutation.isPending,
     // Helper function to get tasks by column ID
     getTasksByColumn: (columnId: string) => {
-      return (tasksQuery.data || []).filter(task => task.column_id === columnId);
+      return (tasksQuery.data || [])
+        .filter(task => task.column_id === columnId)
+        .sort((a, b) => a.position - b.position);
     }
   };
 };
