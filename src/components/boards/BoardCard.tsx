@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { CalendarDays, Users } from "lucide-react";
 import { type Board } from "@/hooks/useBoards";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface BoardCardProps {
   board: Board;
@@ -29,8 +30,28 @@ export function BoardCard({ board }: BoardCardProps) {
     }
   };
 
+  // Get card colors to match sticky notes theme
+  const getCardColor = () => {
+    if (board.title.toLowerCase().includes('development') || board.title.toLowerCase().includes('dev')) {
+      return "bg-blue-50 hover:bg-blue-100 border-blue-200";
+    } else if (board.title.toLowerCase().includes('design')) {
+      return "bg-purple-50 hover:bg-purple-100 border-purple-200";
+    } else if (board.title.toLowerCase().includes('marketing')) {
+      return "bg-green-50 hover:bg-green-100 border-green-200";
+    } else if (board.title.toLowerCase().includes('research')) {
+      return "bg-amber-50 hover:bg-amber-100 border-amber-200";
+    } else {
+      return "bg-yellow-50 hover:bg-yellow-100 border-yellow-200";
+    }
+  };
+
   return (
-    <Card className="h-full flex flex-col overflow-hidden border hover:shadow-md transition-all duration-200 hover:border-blue-300">
+    <Card 
+      className={cn(
+        "h-full flex flex-col overflow-hidden border hover:shadow-md transition-all duration-200 transform hover:-rotate-1",
+        getCardColor()
+      )}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="line-clamp-1">{board.title}</CardTitle>
@@ -39,7 +60,7 @@ export function BoardCard({ board }: BoardCardProps) {
           </Badge>
         </div>
         {board.description && (
-          <CardDescription className="line-clamp-2 mt-1 text-gray-600">
+          <CardDescription className="mt-1 text-gray-600 whitespace-pre-wrap break-words">
             {board.description}
           </CardDescription>
         )}

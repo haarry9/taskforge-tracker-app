@@ -18,11 +18,25 @@ interface TaskCardProps {
   onDelete: (taskId: string) => void;
 }
 
+// Function to determine the sticky note background color based on priority
+const getStickyNoteColor = (priority: string) => {
+  switch (priority) {
+    case 'High':
+      return 'bg-amber-100 hover:bg-amber-200';
+    case 'Medium':
+      return 'bg-blue-100 hover:bg-blue-200';
+    case 'Low':
+      return 'bg-green-100 hover:bg-green-200';
+    default:
+      return 'bg-yellow-100 hover:bg-yellow-200';
+  }
+};
+
 export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
-  // Define priority badge colors with updated blue theme
+  // Define priority badge colors
   const priorityColors = {
-    Low: "bg-blue-100 text-blue-700",
-    Medium: "bg-yellow-100 text-yellow-700",
+    Low: "bg-green-100 text-green-700",
+    Medium: "bg-blue-100 text-blue-700",
     High: "bg-red-100 text-red-700",
   };
 
@@ -33,13 +47,19 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && new Date(task.due_date).setHours(0,0,0,0) !== new Date().setHours(0,0,0,0);
 
   return (
-    <Card className="mb-2 shadow-sm border hover:shadow-md transition-shadow rounded-lg bg-white">
+    <Card 
+      className={cn(
+        "mb-3 border shadow-sm transition-all duration-200 rotate-0 hover:-rotate-1",
+        getStickyNoteColor(task.priority),
+        "transform-gpu"
+      )}
+    >
       <CardContent className="p-3 space-y-2">
         <div className="flex items-start justify-between">
-          <h3 className="font-medium text-sm text-blue-800">{task.title}</h3>
+          <h3 className="font-medium text-gray-800">{task.title}</h3>
           <div className="flex">
             <DropdownMenu>
-              <DropdownMenuTrigger className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-blue-50 focus:outline-none">
+              <DropdownMenuTrigger className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-black/10 focus:outline-none">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </DropdownMenuTrigger>
@@ -59,7 +79,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
         </div>
 
         {task.description && (
-          <p className="text-xs text-slate-600 line-clamp-2">
+          <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
             {task.description}
           </p>
         )}

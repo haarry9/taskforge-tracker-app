@@ -154,6 +154,49 @@ export const useTasks = (boardId?: string) => {
     };
   };
 
+  const moveTask = async ({ 
+    taskId, 
+    newColumnId, 
+    oldColumnId,
+    newPosition 
+  }: { 
+    taskId: string; 
+    newColumnId: string;
+    oldColumnId: string;
+    newPosition: number;
+  }): Promise<Task> => {
+    if (!user) throw new Error("User not authenticated");
+    
+    const updates = {
+      column_id: newColumnId,
+      position: newPosition,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .update(updates)
+      .eq("id", taskId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error moving task:", error);
+      toast({
+        title: "Error moving task",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+
+    // Cast the data to ensure priority is of the correct type
+    return {
+      ...data,
+      priority: data.priority as "Low" | "Medium" | "High"
+    };
+  };
+
   const deleteTask = async (taskId: string): Promise<void> => {
     if (!user) throw new Error("User not authenticated");
     if (!taskId) throw new Error("Task ID is required");
@@ -199,6 +242,13 @@ export const useTasks = (boardId?: string) => {
     },
   });
 
+  const moveTaskMutation = useMutation({
+    mutationFn: moveTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
+    },
+  });
+
   const deleteTaskMutation = useMutation({
     mutationFn: deleteTask,
     onSuccess: () => {
@@ -213,6 +263,7 @@ export const useTasks = (boardId?: string) => {
     error: tasksQuery.error,
     createTask: createTaskMutation.mutate,
     updateTask: updateTaskMutation.mutate,
+    moveTask: moveTaskMutation.mutate,
     deleteTask: deleteTaskMutation.mutate,
     isPendingCreate: createTaskMutation.isPending,
     isPendingUpdate: updateTaskMutation.isPending,
