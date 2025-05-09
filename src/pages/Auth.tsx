@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Grid3X3, ArrowLeft } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -19,7 +20,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Auth() {
-  const { signIn, signUp } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,56 +47,80 @@ export default function Auth() {
     }
   };
 
+  // Redirect if already authenticated
+  if (user) {
+    return <Navigate to="/dashboard" />;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">TaskForge</CardTitle>
-          <CardDescription className="text-center">
-            {isLogin ? "Sign in to your account" : "Create a new account"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="email@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button className="w-full" type="submit" disabled={isLoading}>
-                {isLoading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button variant="link" onClick={() => setIsLogin(!isLogin)}>
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-          </Button>
-        </CardFooter>
-      </Card>
+    <div className="min-h-screen flex flex-col bg-accent">
+      <div className="px-4 py-4 flex justify-between items-center">
+        <Link to="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm font-medium">Back to Home</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Grid3X3 className="h-6 w-6 text-primary" />
+          <span className="font-bold text-lg">TaskForge</span>
+        </div>
+      </div>
+      
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">
+              {isLogin ? "Welcome back" : "Create an account"}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {isLogin 
+                ? "Enter your credentials to access your account" 
+                : "Enter your details to create a new account"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="email@example.com" {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button className="w-full h-11" type="submit" disabled={isLoading}>
+                  {isLoading 
+                    ? "Loading..." 
+                    : isLogin ? "Sign In" : "Create Account"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <Button variant="link" onClick={() => setIsLogin(!isLogin)} className="text-primary">
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
