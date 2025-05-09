@@ -9,6 +9,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import BoardPage from "./pages/BoardPage";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./contexts/AuthContext";
 
@@ -37,6 +38,11 @@ function AppRoutes() {
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/board/:boardId" element={
+        <ProtectedRoute>
+          <BoardPage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

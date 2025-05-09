@@ -4,7 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useBoards } from "@/hooks/useBoards";
+import { useNavigate } from "react-router-dom";
 
 interface CreateBoardDialogProps {
   isOpen: boolean;
@@ -14,23 +16,34 @@ interface CreateBoardDialogProps {
 export function CreateBoardDialog({ isOpen, onClose }: CreateBoardDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [lists, setLists] = useState("");
   const { createBoard, isPending } = useBoards();
+  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim()) return;
+    
+    // Parse the comma-separated list of column names
+    const columns = lists
+      ? lists.split(',').map(name => name.trim()).filter(name => name !== "")
+      : ["To Do", "In Progress", "Done"]; // Default columns if nothing provided
 
     createBoard(
       { 
         title: title.trim(), 
-        description: description.trim() || undefined 
+        description: description.trim() || undefined,
+        columns
       },
       {
-        onSuccess: () => {
+        onSuccess: (board) => {
           setTitle("");
           setDescription("");
+          setLists("");
           onClose();
+          // Navigate to the new board page
+          navigate(`/board/${board.id}`);
         },
       }
     );
@@ -66,6 +79,15 @@ export function CreateBoardDialog({ isOpen, onClose }: CreateBoardDialogProps) {
                 placeholder="Enter board description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="lists">Lists (comma-separated)</Label>
+              <Input
+                id="lists"
+                placeholder="To Do, In Progress, Done"
+                value={lists}
+                onChange={(e) => setLists(e.target.value)}
               />
             </div>
           </div>

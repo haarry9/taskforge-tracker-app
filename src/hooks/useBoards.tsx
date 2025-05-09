@@ -14,9 +14,19 @@ export type Board = {
   manager_id: string;
 };
 
+export type BoardColumn = {
+  id: string;
+  board_id: string;
+  title: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type NewBoard = {
   title: string;
   description?: string;
+  columns?: string[];
 };
 
 export const useBoards = () => {
@@ -46,21 +56,49 @@ export const useBoards = () => {
 
   const createBoard = async (newBoard: NewBoard): Promise<Board> => {
     if (!user) throw new Error("User not authenticated");
-
-    const { data, error } = await supabase
+    
+    // Start a transaction by using supabase
+    const { data: boardData, error: boardError } = await supabase
       .from("boards")
-      .insert([{ ...newBoard, manager_id: user.id }])
+      .insert([{ 
+        title: newBoard.title, 
+        description: newBoard.description,
+        manager_id: user.id 
+      }])
       .select()
       .single();
 
-    if (error) {
-      console.error("Error creating board:", error);
+    if (boardError) {
+      console.error("Error creating board:", boardError);
       toast({
         title: "Error creating board",
-        description: error.message,
+        description: boardError.message,
         variant: "destructive",
       });
-      throw error;
+      throw boardError;
+    }
+
+    // If columns were provided, create them
+    if (newBoard.columns && newBoard.columns.length > 0) {
+      const columnsToInsert = newBoard.columns.map((title, index) => ({
+        board_id: boardData.id,
+        title,
+        position: index
+      }));
+
+      const { error: columnsError } = await supabase
+        .from("board_columns")
+        .insert(columnsToInsert);
+
+      if (columnsError) {
+        console.error("Error creating columns:", columnsError);
+        toast({
+          title: "Error creating columns",
+          description: columnsError.message,
+          variant: "destructive",
+        });
+        throw columnsError;
+      }
     }
 
     toast({
@@ -68,7 +106,39 @@ export const useBoards = () => {
       description: "Your new board has been created successfully.",
     });
 
-    return data;
+    return boardData;
+  };
+
+  // New function to fetch columns for a specific board
+  const fetchBoardColumns = async (boardId: string): Promise<BoardColumn[]> => {
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from("board_columns")
+      .select("*")
+      .eq("board_id", boardId)
+      .order("position", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching board columns:", error);
+      toast({
+        title: "Error fetching columns",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+
+    return data || [];
+  };
+
+  // New hook to get columns for a specific board
+  const useBoardColumns = (boardId: string | undefined) => {
+    return useQuery({
+      queryKey: ["boardColumns", boardId],
+      queryFn: () => boardId ? fetchBoardColumns(boardId) : Promise.resolve([]),
+      enabled: !!boardId && !!user,
+    });
   };
 
   const boardsQuery = useQuery({
@@ -91,5 +161,6 @@ export const useBoards = () => {
     error: boardsQuery.error,
     createBoard: createBoardMutation.mutate,
     isPending: createBoardMutation.isPending,
+    useBoardColumns,
   };
 };

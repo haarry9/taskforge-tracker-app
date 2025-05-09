@@ -35,7 +35,7 @@ export function BoardsGrid() {
         <h2 className="text-xl font-semibold">Your Boards</h2>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          New Board
+          Create Board
         </Button>
       </div>
 
