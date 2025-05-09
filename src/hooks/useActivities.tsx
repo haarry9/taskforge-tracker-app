@@ -62,7 +62,8 @@ export const useActivities = (boardId?: string) => {
       throw error;
     }
 
-    return data || [];
+    // Ensure we're casting the data to match our Activity type
+    return (data || []) as Activity[];
   };
 
   const createActivity = async (newActivity: NewActivity): Promise<Activity> => {
@@ -89,7 +90,7 @@ export const useActivities = (boardId?: string) => {
       throw error;
     }
 
-    return data;
+    return data as Activity;
   };
 
   const activitiesQuery = useQuery({
