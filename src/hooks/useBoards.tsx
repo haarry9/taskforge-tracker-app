@@ -279,7 +279,7 @@ export const useBoards = () => {
       description: `An invitation has been sent to ${newMember.email}.`,
     });
 
-    return data;
+    return data as BoardMember;
   };
 
   // Function to fetch members of a board
@@ -301,7 +301,7 @@ export const useBoards = () => {
       throw error;
     }
 
-    return data || [];
+    return data as BoardMember[];
   };
 
   // Hook to get columns for a specific board
