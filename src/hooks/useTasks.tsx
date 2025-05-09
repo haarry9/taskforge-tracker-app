@@ -185,8 +185,7 @@ export const useTasks = (boardId?: string) => {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, updates }: { taskId: string; updates: Partial<Omit<Task, 'id' | 'created_at'>> }) => 
-      updateTask(taskId, updates),
+    mutationFn: updateTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
     },
