@@ -53,12 +53,18 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
         getStickyNoteColor(task.priority),
         "transform-gpu"
       )}
+      onClick={(e) => {
+        // Prevent click if we're clicking the dropdown menu
+        if (!(e.target as HTMLElement).closest('.task-dropdown')) {
+          onEdit(task);
+        }
+      }}
     >
       <div className="absolute top-0 left-0 w-full h-full opacity-0 hover:opacity-10 bg-black z-10"></div>
       <CardContent className="p-3 space-y-2">
         <div className="flex items-start justify-between">
           <h3 className="font-medium text-gray-800">{task.title}</h3>
-          <div className="flex">
+          <div className="flex task-dropdown">
             <DropdownMenu>
               <DropdownMenuTrigger className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-black/10 focus:outline-none">
                 <MoreHorizontal className="h-4 w-4" />
@@ -69,7 +75,10 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => onDelete(task.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id);
+                  }}
                   className="text-red-600 rounded hover:bg-red-50"
                 >
                   Delete

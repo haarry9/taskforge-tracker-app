@@ -50,6 +50,20 @@ export default function DependencySelect({
     // Group tasks by column
     const groupedTasks: TasksByColumn = {};
     
+    // Create a map of column IDs to column titles
+    const columnMap = new Map<string, string>();
+    availableTasks.forEach(task => {
+      // Find all unique columns
+      if (!columnMap.has(task.column_id)) {
+        // Try to find any task with this column_id to use its column as reference
+        const tasksInColumn = availableTasks.filter(t => t.column_id === task.column_id);
+        if (tasksInColumn.length > 0) {
+          // For simplicity, we'll just use the first task's column info
+          columnMap.set(task.column_id, `Column ${task.column_id.substring(0, 4)}...`);
+        }
+      }
+    });
+    
     availableTasks.forEach(task => {
       // Skip the current task as it can't depend on itself
       if (currentTaskId && task.id === currentTaskId) {
@@ -57,9 +71,8 @@ export default function DependencySelect({
       }
 
       if (!groupedTasks[task.column_id]) {
-        const column = availableTasks.find(t => t.column_id === task.column_id);
         groupedTasks[task.column_id] = {
-          columnTitle: column ? `Column ${task.column_id}` : 'Unknown',
+          columnTitle: columnMap.get(task.column_id) || `Column ${task.column_id.substring(0, 4)}...`,
           tasks: []
         };
       }
@@ -120,6 +133,7 @@ export default function DependencySelect({
                         key={task.id}
                         value={`${task.id}-${task.title}`}
                         onSelect={() => toggleTask(task.id)}
+                        className="cursor-pointer"
                       >
                         <Check
                           className={cn(
