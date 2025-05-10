@@ -80,12 +80,35 @@ export function TaskDialog({
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      title: task?.title || "",
-      description: task?.description || "",
-      priority: task?.priority || "Medium",
-      due_date: task?.due_date ? new Date(task.due_date) : undefined,
+      title: "",
+      description: "",
+      priority: "Medium",
+      due_date: undefined,
     },
   });
+
+  // Reset form when dialog opens/closes or task changes
+  useEffect(() => {
+    if (isOpen) {
+      // When editing, populate form with task data
+      if (isEditing && task) {
+        form.reset({
+          title: task.title || "",
+          description: task.description || "",
+          priority: task.priority || "Medium",
+          due_date: task.due_date ? new Date(task.due_date) : undefined,
+        });
+      } else {
+        // When creating new, reset to defaults
+        form.reset({
+          title: "",
+          description: "",
+          priority: "Medium",
+          due_date: undefined,
+        });
+      }
+    }
+  }, [isOpen, isEditing, task, form]);
 
   // Load existing dependencies when editing
   useEffect(() => {
@@ -98,6 +121,9 @@ export function TaskDialog({
         } catch (error) {
           console.error("Error loading dependencies:", error);
         }
+      } else {
+        // Reset dependencies when creating new task
+        setSelectedDependencyIds([]);
       }
     };
     
@@ -175,7 +201,7 @@ export function TaskDialog({
                   <FormLabel className="text-blue-700">Priority</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger className="border-blue-200 focus:ring-blue-500">

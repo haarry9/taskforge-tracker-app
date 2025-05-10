@@ -84,6 +84,11 @@ export default function DependencySelect({
     setTasksByColumn(groupedTasks);
   }, [availableTasks, currentTaskId, columns]);
 
+  // Update selected IDs when the prop changes
+  useEffect(() => {
+    setSelectedIds(selectedTaskIds);
+  }, [selectedTaskIds]);
+
   const toggleTask = (taskId: string) => {
     const updatedSelection = selectedIds.includes(taskId)
       ? selectedIds.filter(id => id !== taskId)
@@ -124,6 +129,7 @@ export default function DependencySelect({
         <PopoverContent className="w-[300px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search tasks..." />
+            <CommandEmpty>No tasks found.</CommandEmpty>
             <CommandList className="max-h-[300px] overflow-auto">
               <ScrollArea className="h-[300px] overflow-y-auto">
                 {Object.entries(tasksByColumn).map(([columnId, { columnTitle, tasks }]) => (
@@ -141,7 +147,7 @@ export default function DependencySelect({
                             selectedIds.includes(task.id) ? "opacity-100" : "opacity-0"
                           )}
                         />
-                        <div className="flex flex-col cursor-pointer">
+                        <div className="flex flex-col">
                           <span className="font-medium">{task.title}</span>
                           <span className="text-xs text-muted-foreground truncate">
                             {task.description?.substring(0, 30) || "No description"}
