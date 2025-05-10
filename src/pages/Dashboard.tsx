@@ -2,7 +2,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { BoardsGrid } from '@/components/boards/BoardsGrid';
-import { Grid3X3, User, LogOut, Bell, Search, Plus } from 'lucide-react';
+import { Grid3X3, User, LogOut, Bell, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
   DropdownMenu, 
@@ -61,20 +61,7 @@ export default function Dashboard() {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Create dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Plus className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white">
-                <DropdownMenuItem>New Board</DropdownMenuItem>
-                <DropdownMenuItem>New Task</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* User dropdown */}
+            {/* User dropdown (removed the Plus button/dropdown as requested) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">

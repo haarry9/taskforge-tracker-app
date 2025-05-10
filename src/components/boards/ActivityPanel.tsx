@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Activity, useActivities } from '@/hooks/useActivities';
@@ -81,10 +82,11 @@ export default function ActivityPanel({ boardId }: ActivityPanelProps) {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-xs hidden sm:flex items-center gap-1"
+          className="text-xs flex items-center gap-1"
         >
           <ActivityIcon className="h-4 w-4" />
-          <span>Activity</span>
+          {/* Only hide text on mobile, not the entire button */}
+          <span className="hidden sm:inline">Activity</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-80 sm:w-96 p-0 flex flex-col">

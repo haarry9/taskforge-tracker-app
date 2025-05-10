@@ -12,33 +12,40 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Grid3X3, ArrowLeft } from 'lucide-react';
 
+// Define separate schemas for login and signup
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
+const signupSchema = loginSchema.extend({
+  fullName: z.string().min(2, { message: "Full name must be at least 2 characters" })
+});
+
 type LoginFormValues = z.infer<typeof loginSchema>;
+type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function Auth() {
   const { user, signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+  // Use the appropriate schema based on isLogin state
+  const form = useForm<LoginFormValues | SignupFormValues>({
+    resolver: zodResolver(isLogin ? loginSchema : signupSchema),
+    defaultValues: isLogin 
+      ? { email: "", password: "" } 
+      : { email: "", password: "", fullName: "" },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const onSubmit = async (values: LoginFormValues | SignupFormValues) => {
     setIsLoading(true);
     try {
       if (isLogin) {
         await signIn(values.email, values.password);
       } else {
-        await signUp(values.email, values.password);
+        const signupValues = values as SignupFormValues;
+        await signUp(signupValues.email, signupValues.password, signupValues.fullName);
       }
     } catch (error) {
       console.error("Authentication error:", error);
@@ -80,6 +87,23 @@ export default function Auth() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Full Name field - only show when registering */}
+                {!isLogin && (
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your name" {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                
                 <FormField
                   control={form.control}
                   name="email"
@@ -115,7 +139,10 @@ export default function Auth() {
             </Form>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <Button variant="link" onClick={() => setIsLogin(!isLogin)} className="text-primary">
+            <Button variant="link" onClick={() => {
+              setIsLogin(!isLogin);
+              form.reset();
+            }} className="text-primary">
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </Button>
           </CardFooter>

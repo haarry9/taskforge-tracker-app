@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Task } from '@/types/task-types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useBoards } from '@/hooks/useBoards';
 
 interface TasksByColumn {
   [columnId: string]: {
@@ -37,6 +38,7 @@ interface DependencySelectProps {
 }
 
 export default function DependencySelect({
+  boardId,
   availableTasks,
   selectedTaskIds,
   currentTaskId,
@@ -45,6 +47,10 @@ export default function DependencySelect({
   const [open, setOpen] = useState(false);
   const [tasksByColumn, setTasksByColumn] = useState<TasksByColumn>({});
   const [selectedIds, setSelectedIds] = useState<string[]>(selectedTaskIds);
+  
+  // Get board columns to show proper column names
+  const { useBoardColumns } = useBoards();
+  const { data: columns = [] } = useBoardColumns(boardId);
 
   useEffect(() => {
     // Group tasks by column
@@ -52,16 +58,8 @@ export default function DependencySelect({
     
     // Create a map of column IDs to column titles
     const columnMap = new Map<string, string>();
-    availableTasks.forEach(task => {
-      // Find all unique columns
-      if (!columnMap.has(task.column_id)) {
-        // Try to find any task with this column_id to use its column as reference
-        const tasksInColumn = availableTasks.filter(t => t.column_id === task.column_id);
-        if (tasksInColumn.length > 0) {
-          // For simplicity, we'll just use the first task's column info
-          columnMap.set(task.column_id, `Column ${task.column_id.substring(0, 4)}...`);
-        }
-      }
+    columns.forEach(column => {
+      columnMap.set(column.id, column.title);
     });
     
     availableTasks.forEach(task => {
@@ -70,18 +68,21 @@ export default function DependencySelect({
         return;
       }
 
-      if (!groupedTasks[task.column_id]) {
-        groupedTasks[task.column_id] = {
-          columnTitle: columnMap.get(task.column_id) || `Column ${task.column_id.substring(0, 4)}...`,
+      const columnId = task.column_id;
+      const columnTitle = columnMap.get(columnId) || `Column ${columnId.substring(0, 4)}...`;
+
+      if (!groupedTasks[columnId]) {
+        groupedTasks[columnId] = {
+          columnTitle: columnTitle,
           tasks: []
         };
       }
       
-      groupedTasks[task.column_id].tasks.push(task);
+      groupedTasks[columnId].tasks.push(task);
     });
     
     setTasksByColumn(groupedTasks);
-  }, [availableTasks, currentTaskId]);
+  }, [availableTasks, currentTaskId, columns]);
 
   const toggleTask = (taskId: string) => {
     const updatedSelection = selectedIds.includes(taskId)

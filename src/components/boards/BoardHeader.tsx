@@ -63,7 +63,7 @@ export function BoardHeader({
             <span className="hidden sm:inline">Dependencies</span>
           </Button>
           
-          {/* Activity Button */}
+          {/* Activity Button - Now visible on mobile too */}
           {boardId && <ActivityPanel boardId={boardId} />}
           
           <Button 

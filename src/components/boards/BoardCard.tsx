@@ -54,13 +54,14 @@ export function BoardCard({ board }: BoardCardProps) {
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="line-clamp-1">{board.title}</CardTitle>
+          {/* Removed line-clamp-1 class to allow full title visibility */}
+          <CardTitle className="break-words">{board.title}</CardTitle>
           <Badge className={getBadgeColor(board.title)}>
             Active
           </Badge>
         </div>
         {board.description && (
-          <CardDescription className="mt-1 text-gray-600 whitespace-pre-wrap break-words">
+          <CardDescription className="mt-1 text-gray-600 break-words">
             {board.description}
           </CardDescription>
         )}
