@@ -14,10 +14,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, User } from 'lucide-react';
+import { CalendarIcon, User, Link } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task } from '@/types/task-types';
 import { useBoards, BoardMember } from '@/hooks/useBoards';
+import { useDependencies, TaskDependency } from '@/hooks/useDependencies';
+import { useTasks } from '@/hooks/useTasks';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -35,6 +37,20 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, boardId }: 
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
+  // Get dependencies
+  const { dependencies } = useDependencies(boardId);
+  const { tasks } = useTasks(boardId);
+  
+  // Get current task dependencies
+  const currentDependencies = task ? dependencies.filter(
+    dep => dep.dependent_task_id === task.id
+  ) : [];
+  
+  // Map dependency IDs to actual tasks
+  const dependencyTasks = currentDependencies.map(dep => {
+    return tasks.find(t => t.id === dep.dependency_task_id);
+  }).filter(Boolean) as Task[];
   
   // Get board members for assignee dropdown
   const { useBoardMembers } = useBoards();
@@ -90,7 +106,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, boardId }: 
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Task title"
+              placeholder={task ? task.title : "Task title"}
             />
           </div>
           <div className="space-y-2">
@@ -99,7 +115,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, boardId }: 
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Task description"
+              placeholder={task?.description || "Task description"}
               rows={3}
             />
           </div>
@@ -129,7 +145,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, boardId }: 
                     {dueDate ? format(dueDate, 'PPP') : <span>No date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-50" align="start">
                   <Calendar
                     mode="single"
                     selected={dueDate}
@@ -151,7 +167,7 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, boardId }: 
               <SelectTrigger>
                 <SelectValue placeholder="Assign to..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50">
                 <SelectItem value="">Unassigned</SelectItem>
                 {eligibleAssignees.map((member) => (
                   <SelectItem key={member.user_id} value={member.user_id}>
@@ -164,6 +180,21 @@ export function TaskModal({ isOpen, onClose, task, onSave, onDelete, boardId }: 
               </SelectContent>
             </Select>
           </div>
+
+          {/* Display current dependencies */}
+          {task && dependencyTasks.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <Label>Current Dependencies</Label>
+              <div className="bg-gray-50 p-3 rounded-md space-y-1 border border-gray-200">
+                {dependencyTasks.map(depTask => (
+                  <div key={depTask.id} className="flex items-center">
+                    <Link className="h-4 w-4 mr-2 text-blue-500" />
+                    <span className="text-sm text-gray-700">{depTask.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter className="flex justify-between sm:justify-between">
           <div>
