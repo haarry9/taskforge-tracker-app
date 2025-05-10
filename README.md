@@ -1,73 +1,59 @@
-# Welcome to your Lovable project
+# TaskForge – Collaborative Kanban Board with Dependency Visualizer
 
-## Project info
+### Core Technologies
+- Frontend: React, TypeScript, Tailwind CSS, shadcn-ui
+- Backend: Supabase (PostgreSQL database)
+- State Management: React Query for data fetching and caching
+- UI/UX: Responsive design with drag-and-drop functionality (react-beautiful-dnd)
 
-**URL**: https://lovable.dev/projects/837ff81d-5f65-49ce-9a69-d3b7b95901ee
+### Key Features
+**1. Kanban Board System**
+Custom columns representing your workflow stages
+Drag-and-drop task cards between columns
+Visual indication of task priority and status
 
-## How can I edit this code?
+**2. Task Dependency System**
+How it works: Tasks can depend on other tasks, creating a directed graph relationship
+Implementation: Each dependency is stored as a relationship between two tasks
+Visualization: Dependencies are displayed as arrows between tasks using SVG bezier curves
+Circular Dependency Prevention: The system checks for circular dependencies using relationship detection algorithms to prevent logical loops (e.g., Task A → Task B → Task A)
 
-There are several ways of editing your application.
+**3. Task Movement Validation**
+When moving a task to the "Complete" column, the system checks if all dependencies are already completed
+Uses breadth-first search (BFS) algorithm to traverse the dependency graph and validate all requirements
+Prevents tasks from being marked as complete when their prerequisites aren't done
 
-**Use Lovable**
+---
+### Project Requirements
+--
+### 👥 User Role: `user`
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/837ff81d-5f65-49ce-9a69-d3b7b95901ee) and start prompting.
+- All users on board can add/edit cards, set dependencies, and move them across columns.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🔐 Authentication & Authorization
 
-**Use your preferred IDE**
+- Login required
+- Board creator controls membership and permissions (this is important)
+- Guests can view (if invited) but not edit
+---
+### 🧱 Core Functional Modules
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/837ff81d-5f65-49ce-9a69-d3b7b95901ee) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. **Board & Column Management**
+    - Create board with custom columns (To Do, In Progress, Done, etc.)
+    - Invite users via email
+2. **Card CRUD & Assignment**
+    - Add cards with title, description, assignee, due date
+    - Edit/delete permissions scoped
+3. **Dependency Linking**
+    - On card detail, select other cards as dependencies
+    - Store as directed edges
+4. **Dependency Visualizer**
+    - Graph or arrow overlays on board showing blockers
+    - Click edge to view details
+5. **Drag & Drop Workflow**
+    - Move cards between columns
+    - Prevent moving a card to Done if dependencies aren’t complete
+6. **Activity Feed & Notifications**
+    - Live feed of card moves and new issues
+    - In-app toast for assignments or blocked moves
