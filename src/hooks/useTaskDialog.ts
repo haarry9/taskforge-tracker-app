@@ -10,7 +10,7 @@ export function useTaskDialog(
   isEditing: boolean,
   task: Task | undefined,
   isOpen: boolean,
-  onSubmit: (data: NewTask, dependencyIds?: string[]) => void,
+  onSubmit: (data: NewTask, dependencyIds: string[]) => void,
   onClose: () => void
 ) {
   const [selectedDependencyIds, setSelectedDependencyIds] = useState<string[]>([]);

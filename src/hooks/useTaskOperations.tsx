@@ -4,6 +4,10 @@ import { useTasks, Task, NewTask } from '@/hooks/useTasks';
 import { useActivities } from '@/hooks/useActivities';
 import { toast } from '@/components/ui/use-toast';
 
+type TaskOptions = {
+  onSuccess?: (result: any) => void;
+};
+
 export function useTaskOperations(boardId: string | undefined, columns: any[] | undefined) {
   const [currentTask, setCurrentTask] = useState<Task | undefined>(undefined);
   const [currentColumnId, setCurrentColumnId] = useState<string>("");
@@ -29,7 +33,7 @@ export function useTaskOperations(boardId: string | undefined, columns: any[] | 
   };
 
   // Handle creating a new task with dependencies
-  const handleCreateTask = (taskData: NewTask, dependencyIds?: string[]) => {
+  const handleCreateTask = (taskData: NewTask, options?: TaskOptions) => {
     createTask(taskData, {
       onSuccess: (newTask) => {
         // Log activity when task is created
@@ -44,7 +48,10 @@ export function useTaskOperations(boardId: string | undefined, columns: any[] | 
           }
         });
         
-        return { newTask, dependencyIds }; // Return for dependency creation
+        // Call the onSuccess callback if provided
+        if (options?.onSuccess) {
+          options.onSuccess(newTask);
+        }
       }
     });
   };
@@ -57,7 +64,7 @@ export function useTaskOperations(boardId: string | undefined, columns: any[] | 
   };
   
   // Handle updating a task with dependencies
-  const handleUpdateTask = (taskData: NewTask, dependencyIds?: string[]) => {
+  const handleUpdateTask = (taskData: NewTask, options?: TaskOptions) => {
     if (currentTask) {
       updateTask({
         taskId: currentTask.id,
@@ -77,7 +84,10 @@ export function useTaskOperations(boardId: string | undefined, columns: any[] | 
             task_id: currentTask.id
           });
           
-          return { updatedTaskId: currentTask.id, dependencyIds }; // Return for dependency updates
+          // Call the onSuccess callback if provided
+          if (options?.onSuccess) {
+            options.onSuccess({ updatedTaskId: currentTask.id });
+          }
         }
       });
     }

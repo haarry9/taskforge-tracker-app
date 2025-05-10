@@ -79,9 +79,9 @@ export function useBoardPage(boardId: string | undefined) {
   // Wrap handleCreateTask to handle dependencies
   const onCreateTask = (taskData: any, dependencyIds?: string[]) => {
     handleCreateTask(taskData, {
-      onSuccess: (result: any) => {
-        if (result && dependencyIds && dependencyIds.length > 0) {
-          handleCreateDependencies(result.newTask.id, dependencyIds);
+      onSuccess: (newTask: any) => {
+        if (newTask && dependencyIds && dependencyIds.length > 0) {
+          handleCreateDependencies(newTask.id, dependencyIds);
         }
       }
     });
