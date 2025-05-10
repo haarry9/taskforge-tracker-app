@@ -51,17 +51,12 @@ export function BoardCard({ board }: BoardCardProps) {
         "h-full flex flex-col overflow-hidden border hover:shadow-md transition-all duration-200 transform hover:-rotate-1",
         getCardColor()
       )}
-      onClick={(e) => {
-        // Don't navigate if clicking on dropdown menu
-        if (!(e.target as HTMLElement).closest('.board-dropdown')) {
-          navigate(`/board/${board.id}`);
-        }
-      }}
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
+          {/* Removed line-clamp-1 class to allow full title visibility */}
           <CardTitle className="break-words">{board.title}</CardTitle>
-          <Badge className={cn(getBadgeColor(board.title), "board-dropdown")}>
+          <Badge className={getBadgeColor(board.title)}>
             Active
           </Badge>
         </div>
@@ -85,7 +80,8 @@ export function BoardCard({ board }: BoardCardProps) {
         <Button 
           variant="default" 
           size="sm" 
-          className="w-full bg-blue-600 hover:bg-blue-700 cursor-pointer"
+          className="w-full bg-blue-600 hover:bg-blue-700"
+          onClick={() => navigate(`/board/${board.id}`)}
         >
           Open Board
         </Button>

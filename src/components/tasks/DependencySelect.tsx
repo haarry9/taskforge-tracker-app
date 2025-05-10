@@ -113,7 +113,7 @@ export default function DependencySelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between cursor-pointer"
+            className="w-full justify-between"
           >
             {selectedIds.length > 0 
               ? `${selectedIds.length} dependencies selected` 
@@ -124,8 +124,9 @@ export default function DependencySelect({
         <PopoverContent className="w-[300px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search tasks..." />
-            <CommandList className="max-h-[300px] overflow-auto">
-              <ScrollArea className="h-[300px] overflow-y-auto">
+            <CommandEmpty>No tasks found.</CommandEmpty>
+            <CommandList>
+              <ScrollArea className="h-[300px]">
                 {Object.entries(tasksByColumn).map(([columnId, { columnTitle, tasks }]) => (
                   <CommandGroup key={columnId} heading={columnTitle}>
                     {tasks.map((task) => (
@@ -133,7 +134,7 @@ export default function DependencySelect({
                         key={task.id}
                         value={`${task.id}-${task.title}`}
                         onSelect={() => toggleTask(task.id)}
-                        className="cursor-pointer hover:bg-accent focus:bg-accent"
+                        className="cursor-pointer"
                       >
                         <Check
                           className={cn(
@@ -141,7 +142,7 @@ export default function DependencySelect({
                             selectedIds.includes(task.id) ? "opacity-100" : "opacity-0"
                           )}
                         />
-                        <div className="flex flex-col cursor-pointer">
+                        <div className="flex flex-col">
                           <span className="font-medium">{task.title}</span>
                           <span className="text-xs text-muted-foreground truncate">
                             {task.description?.substring(0, 30) || "No description"}
@@ -167,7 +168,7 @@ export default function DependencySelect({
                 : task.title}
               <button 
                 onClick={(e) => removeTask(task.id, e)} 
-                className="ml-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                className="ml-1 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3 w-3" />
               </button>

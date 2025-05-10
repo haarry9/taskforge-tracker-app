@@ -49,7 +49,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   return (
     <Card 
       className={cn(
-        "relative border shadow-sm transition-all duration-200 rotate-0 hover:-rotate-1",
+        "relative border shadow-sm transition-all duration-200 rotate-0 hover:-rotate-1 cursor-grab active:cursor-grabbing",
         getStickyNoteColor(task.priority),
         "transform-gpu"
       )}
@@ -61,21 +61,17 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
       }}
     >
       <div className="absolute top-0 left-0 w-full h-full opacity-0 hover:opacity-10 bg-black z-10"></div>
-      <div className="absolute top-0 left-0 w-6 h-full cursor-grab active:cursor-grabbing"></div>
       <CardContent className="p-3 space-y-2">
         <div className="flex items-start justify-between">
-          <div className="flex items-center">
-            <GripVertical className="h-4 w-4 mr-2 text-gray-400 cursor-grab active:cursor-grabbing" />
-            <h3 className="font-medium text-gray-800">{task.title}</h3>
-          </div>
+          <h3 className="font-medium text-gray-800">{task.title}</h3>
           <div className="flex task-dropdown">
             <DropdownMenu>
-              <DropdownMenuTrigger className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-black/10 focus:outline-none cursor-pointer z-20">
+              <DropdownMenuTrigger className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-black/10 focus:outline-none">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-lg">
-                <DropdownMenuItem onClick={() => onEdit(task)} className="rounded hover:bg-blue-50 cursor-pointer">
+                <DropdownMenuItem onClick={() => onEdit(task)} className="rounded hover:bg-blue-50">
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem 
@@ -83,7 +79,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
                     e.stopPropagation();
                     onDelete(task.id);
                   }}
-                  className="text-red-600 rounded hover:bg-red-50 cursor-pointer"
+                  className="text-red-600 rounded hover:bg-red-50"
                 >
                   Delete
                 </DropdownMenuItem>
@@ -93,12 +89,12 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
         </div>
 
         {task.description && (
-          <p className="text-sm text-gray-700 whitespace-pre-wrap break-words pl-6">
+          <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
             {task.description}
           </p>
         )}
         
-        <div className="flex justify-between items-center pt-1 pl-6">
+        <div className="flex justify-between items-center pt-1">
           <span 
             className={cn(
               "px-2 py-0.5 rounded-full text-xs font-medium",
