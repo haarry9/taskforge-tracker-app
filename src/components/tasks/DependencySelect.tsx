@@ -124,7 +124,6 @@ export default function DependencySelect({
         <PopoverContent className="w-[300px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search tasks..." />
-            <CommandEmpty>No tasks found.</CommandEmpty>
             <CommandList className="max-h-[300px] overflow-auto">
               <ScrollArea className="h-[300px] overflow-y-auto">
                 {Object.entries(tasksByColumn).map(([columnId, { columnTitle, tasks }]) => (
