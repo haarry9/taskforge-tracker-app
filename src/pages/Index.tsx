@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -129,62 +128,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Why TaskForge Section */}
-      <section id="why" className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Why TaskForge?</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              We built TaskForge to solve real project management challenges.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="order-2 md:order-1">
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-bold text-lg">Intuitive Design</h3>
-                    <p className="text-muted-foreground">Simple and easy to use interface that anyone can understand.</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-bold text-lg">Real-time Updates</h3>
-                    <p className="text-muted-foreground">All changes are synchronized instantly across all team members.</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-bold text-lg">Dependency Visualization</h3>
-                    <p className="text-muted-foreground">Clearly see how tasks are related and identify bottlenecks.</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-bold text-lg">Customizable Workflow</h3>
-                    <p className="text-muted-foreground">Adapt TaskForge to fit your team's unique processes.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div className="order-1 md:order-2">
-              <div className="rounded-xl overflow-hidden shadow-lg border border-border/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1559028012-481c04fa702d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1336&q=80" 
-                  alt="TaskForge in action" 
-                  className="w-full h-auto"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
       {/* CTA Section */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
@@ -213,11 +156,6 @@ const Index = () => {
                 <li>
                   <a href="#features" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                     Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#why" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                    Why TaskForge
                   </a>
                 </li>
                 <li>
