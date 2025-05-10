@@ -191,12 +191,17 @@ export const canMoveToLastColumn = (
   canMove: boolean; 
   blockingDependencies: string[] 
 } => {
+  console.log(`Checking if task ${taskId} can move to last column ${lastColumnId}`);
+  
   // Find all tasks that the current task depends on
   const taskDependencies = dependencies.filter(
     dep => dep.dependent_task_id === taskId
   );
   
+  console.log(`Found ${taskDependencies.length} direct dependencies for task ${taskId}`);
+  
   if (taskDependencies.length === 0) {
+    console.log(`Task ${taskId} has no dependencies, can be moved to last column`);
     // If the task has no dependencies, it can be moved to the last column
     return { canMove: true, blockingDependencies: [] };
   }
@@ -212,13 +217,21 @@ export const canMoveToLastColumn = (
       // If dependency task doesn't exist or is not in the last column,
       // add it to the blocking dependencies
       if (dependencyTask) {
+        console.log(`Dependency task ${dependencyTask.title} (${dependencyTask.id}) is in column ${dependencyTask.column_id}, not in last column ${lastColumnId}`);
         blockingDependencies.push(dependencyTask.title);
+      } else {
+        console.log(`Dependency task with ID ${dependency.dependency_task_id} not found in task list`);
       }
+    } else {
+      console.log(`Dependency task ${dependencyTask.title} is already in the last column`);
     }
   }
 
+  const canMove = blockingDependencies.length === 0;
+  console.log(`Can task move to last column? ${canMove}`, blockingDependencies);
+
   return {
-    canMove: blockingDependencies.length === 0,
+    canMove,
     blockingDependencies
   };
 };
@@ -236,6 +249,7 @@ export const getTransitiveDependencies = (
   canMove: boolean; 
   blockingDependencies: string[] 
 } => {
+  console.log(`Checking transitive dependencies for task ${taskId}`);
   let result: { canMove: boolean; blockingDependencies: string[] } = { 
     canMove: true, 
     blockingDependencies: [] 
@@ -260,17 +274,23 @@ export const getTransitiveDependencies = (
       dep => dep.dependent_task_id === currentTaskId
     );
     
+    console.log(`Task ${currentTaskId} has ${currentDependencies.length} direct dependencies`);
+    
     for (const dependency of currentDependencies) {
       const dependencyTask = allTasks.find(task => task.id === dependency.dependency_task_id);
       
       if (!dependencyTask) {
+        console.log(`Dependency task with ID ${dependency.dependency_task_id} not found in task list`);
         continue; // Skip if dependency task doesn't exist
       }
       
       if (dependencyTask.column_id !== lastColumnId) {
         // If dependency task is not in the last column, add it to blocking dependencies
+        console.log(`Dependency task ${dependencyTask.title} is in column ${dependencyTask.column_id}, not in last column ${lastColumnId}`);
         result.blockingDependencies.push(dependencyTask.title);
         result.canMove = false;
+      } else {
+        console.log(`Dependency task ${dependencyTask.title} is already in the last column`);
       }
       
       // Add this dependency to the queue to check its dependencies too
@@ -278,5 +298,6 @@ export const getTransitiveDependencies = (
     }
   }
   
+  console.log(`Transitive dependency check result for task ${taskId}:`, result);
   return result;
 };

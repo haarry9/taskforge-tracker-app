@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useBoards } from '@/hooks/useBoards';
 import { useTasks, Task, NewTask } from '@/hooks/useTasks';
@@ -268,6 +269,8 @@ export function useBoardPage(boardId: string | undefined) {
     const sourceColumnId = source.droppableId;
     const destinationColumnId = destination.droppableId;
     
+    console.log(`[Drag end] Moving task ${taskId} from column ${sourceColumnId} to column ${destinationColumnId}`);
+    
     const movedTask = tasks.find(task => task.id === taskId);
     if (!movedTask) {
       toast({
@@ -289,11 +292,13 @@ export function useBoardPage(boardId: string | undefined) {
     }
 
     // Find the last column (we assume it's the column with the highest position)
-    // This could also be a configuration setting or determined by another method
     const lastColumn = [...columns].sort((a, b) => b.position - a.position)[0];
+    console.log(`[Drag end] Last column identified as: "${lastColumn.title}" (${lastColumn.id})`);
     
     // If moving to the last column, check dependencies
     if (destinationColumnId === lastColumn.id && sourceColumnId !== lastColumn.id) {
+      console.log(`[Drag end] Task being moved to last column. Checking dependencies...`);
+      
       // Check both direct and transitive dependencies
       const { canMove, blockingDependencies } = getTransitiveDependencies(
         taskId,
@@ -301,6 +306,8 @@ export function useBoardPage(boardId: string | undefined) {
         dependencies,
         lastColumn.id
       );
+      
+      console.log(`[Drag end] Can move? ${canMove}. Blocking dependencies: ${blockingDependencies.join(', ')}`);
       
       if (!canMove) {
         // Format the dependency titles for display
