@@ -1,75 +1,76 @@
 
-import React from 'react';
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Navigate,
-} from 'react-router-dom';
-import { useAuth, AuthProvider } from '@/contexts/AuthContext';
-import Dashboard from '@/pages/Dashboard';
-import Auth from '@/pages/Auth';
-import BoardPage from '@/pages/BoardPage';
-import { InvitationHandler } from "@/components/invitations/InvitationHandler";
+import React from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import BoardPage from "./pages/BoardPage";
+import NotFound from "./pages/NotFound";
+import { useAuth } from "./contexts/AuthContext";
 
-// A wrapper for routes that require authentication
-const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
+const queryClient = new QueryClient();
 
-  if (isLoading) {
-    // You might want to render a loading spinner here
-    return <div>Loading...</div>;
+// Protected route component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-pulse space-y-2 text-center">
+          <div className="h-8 w-8 mx-auto rounded-full bg-primary/20"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
-
+  
   if (!user) {
-    // Redirect to the login page if not authenticated
-    return <Navigate to="/auth" />;
+    return <Navigate to="/auth" replace />;
   }
+  
+  return <>{children}</>;
+}
 
-  return children;
-};
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Navigate to="/dashboard" />,
-  },
-  {
-    path: "/dashboard",
-    element: (
-      <AuthRoute>
-        <Dashboard />
-      </AuthRoute>
-    ),
-  },
-  {
-    path: "/auth",
-    element: <Auth />,
-  },
-  {
-    path: "/board/:boardId",
-    element: (
-      <AuthRoute>
-        <BoardPage />
-      </AuthRoute>
-    ),
-  },
-  {
-    path: "/invitations/:invitationId/:action",
-    element: (
-      <AuthRoute>
-        <InvitationHandler />
-      </AuthRoute>
-    ),
-  },
-]);
-
-// Main App component that provides authentication context
-function App() {
+function AppRoutes() {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/board/:boardId" element={
+        <ProtectedRoute>
+          <BoardPage />
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
+
+const App = () => (
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AppRoutes />
+          </TooltipProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  </React.StrictMode>
+);
 
 export default App;

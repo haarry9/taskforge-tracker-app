@@ -1,160 +1,153 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Grid3X3, ArrowLeft } from 'lucide-react';
+
+// Define separate schemas for login and signup
+const loginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+});
+
+const signupSchema = loginSchema.extend({
+  fullName: z.string().min(2, { message: "Full name must be at least 2 characters" })
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn, signUp, user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Check if there's a redirect parameter in the URL
-  const searchParams = new URLSearchParams(location.search);
-  const redirectTo = searchParams.get('redirect');
-  
-  useEffect(() => {
-    // If user is already authenticated, redirect to dashboard
-    if (user) {
-      navigate('/dashboard');
-    }
-    
-    // Check if there's a pending invitation in session storage
-    const pendingInvitation = sessionStorage.getItem('pendingInvitation');
-    if (pendingInvitation && user) {
-      try {
-        const { invitationId, action } = JSON.parse(pendingInvitation);
-        sessionStorage.removeItem('pendingInvitation');
-        navigate(`/invitations/${invitationId}/${action}`);
-      } catch (error) {
-        console.error('Error processing pending invitation:', error);
-      }
-    }
-  }, [user, navigate]);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
+  const { user, signIn, signUp } = useAuth();
+  const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Use the appropriate schema based on isLogin state
+  const form = useForm<LoginFormValues | SignupFormValues>({
+    resolver: zodResolver(isLogin ? loginSchema : signupSchema),
+    defaultValues: isLogin 
+      ? { email: "", password: "" } 
+      : { email: "", password: "", fullName: "" },
+  });
+
+  const onSubmit = async (values: LoginFormValues | SignupFormValues) => {
+    setIsLoading(true);
     try {
-      if (isSignUp) {
-        await signUp(email, password, fullName);
-        toast({
-          title: "Registration successful",
-          description: "Please check your email for verification.",
-        });
+      if (isLogin) {
+        await signIn(values.email, values.password);
       } else {
-        await signIn(email, password);
-        
-        // Handle redirect after login if needed
-        if (redirectTo === 'invitation') {
-          const pendingInvitation = sessionStorage.getItem('pendingInvitation');
-          if (pendingInvitation) {
-            try {
-              const { invitationId, action } = JSON.parse(pendingInvitation);
-              sessionStorage.removeItem('pendingInvitation');
-              navigate(`/invitations/${invitationId}/${action}`);
-            } catch (error) {
-              console.error('Error processing pending invitation:', error);
-              navigate('/dashboard');
-            }
-          } else {
-            navigate('/dashboard');
-          }
-        } else {
-          navigate('/dashboard');
-        }
+        const signupValues = values as SignupFormValues;
+        await signUp(signupValues.email, signupValues.password, signupValues.fullName);
       }
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.error("Authentication error:", error);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-  
+
+  // Redirect if already authenticated
+  if (user) {
+    return <Navigate to="/dashboard" />;
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <Card className="max-w-md w-full p-6">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          {isSignUp ? 'Create an Account' : 'Sign In'}
-        </h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Your full name"
-                required={isSignUp}
-              />
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email address"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              required
-            />
-          </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></span>
-                {isSignUp ? 'Creating Account...' : 'Signing In...'}
-              </span>
-            ) : (
-              isSignUp ? 'Sign Up' : 'Sign In'
-            )}
-          </Button>
-        </form>
-        
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-blue-600 hover:underline focus:outline-none text-sm"
-          >
-            {isSignUp 
-              ? 'Already have an account? Sign In' 
-              : 'Need an account? Sign Up'}
-          </button>
+    <div className="min-h-screen flex flex-col bg-accent">
+      <div className="px-4 py-4 flex justify-between items-center">
+        <Link to="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm font-medium">Back to Home</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Grid3X3 className="h-6 w-6 text-primary" />
+          <span className="font-bold text-lg">TaskForge</span>
         </div>
-      </Card>
+      </div>
+      
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">
+              {isLogin ? "Welcome back" : "Create an account"}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {isLogin 
+                ? "Enter your credentials to access your account" 
+                : "Enter your details to create a new account"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Full Name field - only show when registering */}
+                {!isLogin && (
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your name" {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="email@example.com" {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button className="w-full h-11" type="submit" disabled={isLoading}>
+                  {isLoading 
+                    ? "Loading..." 
+                    : isLogin ? "Sign In" : "Create Account"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <Button variant="link" onClick={() => {
+              setIsLogin(!isLogin);
+              form.reset();
+            }} className="text-primary">
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
