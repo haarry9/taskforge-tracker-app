@@ -8,7 +8,7 @@ export function useTaskDialog(
   boardId: string,
   columnId: string,
   isEditing: boolean,
-  task?: Task,
+  task: Task | undefined,
   isOpen: boolean,
   onSubmit: (data: NewTask, dependencyIds?: string[]) => void,
   onClose: () => void
