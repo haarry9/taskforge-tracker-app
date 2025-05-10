@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TaskDependency, NewTaskDependency } from "@/types/dependency-types";
 import { toast } from "@/components/ui/use-toast";
+import { Task } from "@/types/task-types";
 
 // Fetch all dependencies for a board
 export const fetchDependencies = async (boardId: string, userId: string | undefined): Promise<TaskDependency[]> => {
@@ -172,4 +172,111 @@ export const checkCircularDependency = async (
   
   // Note: This is a simplified circular dependency check. A complete check
   // would need to traverse the full graph to find indirect circular references.
+};
+
+/**
+ * Check if a task can be moved to the last column
+ * @param taskId - The ID of the task being moved
+ * @param allTasks - All tasks in the board
+ * @param dependencies - All dependencies in the board
+ * @param lastColumnId - ID of the last column
+ * @returns An object with canMove (boolean) and blockingDependencies (array of task names)
+ */
+export const canMoveToLastColumn = (
+  taskId: string,
+  allTasks: Task[],
+  dependencies: TaskDependency[],
+  lastColumnId: string
+): { 
+  canMove: boolean; 
+  blockingDependencies: string[] 
+} => {
+  // Find all tasks that the current task depends on
+  const taskDependencies = dependencies.filter(
+    dep => dep.dependent_task_id === taskId
+  );
+  
+  if (taskDependencies.length === 0) {
+    // If the task has no dependencies, it can be moved to the last column
+    return { canMove: true, blockingDependencies: [] };
+  }
+
+  // Check if all dependencies are in the last column
+  const blockingDependencies: string[] = [];
+  
+  for (const dependency of taskDependencies) {
+    // Find the dependency task
+    const dependencyTask = allTasks.find(task => task.id === dependency.dependency_task_id);
+    
+    if (!dependencyTask || dependencyTask.column_id !== lastColumnId) {
+      // If dependency task doesn't exist or is not in the last column,
+      // add it to the blocking dependencies
+      if (dependencyTask) {
+        blockingDependencies.push(dependencyTask.title);
+      }
+    }
+  }
+
+  return {
+    canMove: blockingDependencies.length === 0,
+    blockingDependencies
+  };
+};
+
+/**
+ * Get all transitive dependencies for a task
+ * This recursively finds all dependencies, including dependencies of dependencies
+ */
+export const getTransitiveDependencies = (
+  taskId: string,
+  allTasks: Task[],
+  dependencies: TaskDependency[],
+  lastColumnId: string
+): { 
+  canMove: boolean; 
+  blockingDependencies: string[] 
+} => {
+  let result: { canMove: boolean; blockingDependencies: string[] } = { 
+    canMove: true, 
+    blockingDependencies: [] 
+  };
+  
+  // Set to track visited tasks to prevent infinite recursion on circular dependencies
+  const visited = new Set<string>();
+  
+  // Queue for breadth-first search
+  const queue: string[] = [taskId];
+  
+  while (queue.length > 0) {
+    const currentTaskId = queue.shift()!;
+    
+    if (visited.has(currentTaskId)) {
+      continue; // Skip if already visited
+    }
+    visited.add(currentTaskId);
+    
+    // Find all immediate dependencies of the current task
+    const currentDependencies = dependencies.filter(
+      dep => dep.dependent_task_id === currentTaskId
+    );
+    
+    for (const dependency of currentDependencies) {
+      const dependencyTask = allTasks.find(task => task.id === dependency.dependency_task_id);
+      
+      if (!dependencyTask) {
+        continue; // Skip if dependency task doesn't exist
+      }
+      
+      if (dependencyTask.column_id !== lastColumnId) {
+        // If dependency task is not in the last column, add it to blocking dependencies
+        result.blockingDependencies.push(dependencyTask.title);
+        result.canMove = false;
+      }
+      
+      // Add this dependency to the queue to check its dependencies too
+      queue.push(dependency.dependency_task_id);
+    }
+  }
+  
+  return result;
 };

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useBoards } from '@/hooks/useBoards';
 import { useTasks, Task, NewTask } from '@/hooks/useTasks';
@@ -6,6 +5,7 @@ import { useActivities } from '@/hooks/useActivities';
 import { useDependencies } from '@/hooks/useDependencies';
 import { toast } from '@/components/ui/use-toast';
 import { DropResult } from 'react-beautiful-dnd';
+import { getTransitiveDependencies } from '@/utils/dependency-utils';
 
 export function useBoardPage(boardId: string | undefined) {
   const { useBoardColumns, useAddColumnMutation } = useBoards();
@@ -250,7 +250,7 @@ export function useBoardPage(boardId: string | undefined) {
     }
   };
   
-  // Handle drag end event with improved error handling and logging
+  // Handle drag end event with improved error handling and dependency validation
   const handleDragEnd = useCallback((result: DropResult) => {
     const { destination, source, draggableId } = result;
     
@@ -276,6 +276,44 @@ export function useBoardPage(boardId: string | undefined) {
         variant: "destructive",
       });
       return;
+    }
+    
+    // Check if columns array exists and has items
+    if (!columns || columns.length === 0) {
+      toast({
+        title: "Error moving task",
+        description: "Board columns are not available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Find the last column (we assume it's the column with the highest position)
+    // This could also be a configuration setting or determined by another method
+    const lastColumn = [...columns].sort((a, b) => b.position - a.position)[0];
+    
+    // If moving to the last column, check dependencies
+    if (destinationColumnId === lastColumn.id && sourceColumnId !== lastColumn.id) {
+      // Check both direct and transitive dependencies
+      const { canMove, blockingDependencies } = getTransitiveDependencies(
+        taskId,
+        tasks,
+        dependencies,
+        lastColumn.id
+      );
+      
+      if (!canMove) {
+        // Format the dependency titles for display
+        const dependencyList = blockingDependencies.join(', ');
+        
+        // Show a toast with the error message
+        toast({
+          title: `Cannot move "${movedTask.title}" to ${lastColumn.title}`,
+          description: `The following dependencies must be in ${lastColumn.title} first: ${dependencyList}`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
     
     const sourceColumnTitle = columns?.find(col => col.id === sourceColumnId)?.title || "Unknown";
@@ -335,7 +373,7 @@ export function useBoardPage(boardId: string | undefined) {
         variant: "destructive",
       });
     }
-  }, [tasks, columns, boardId, moveTask, createActivity, getTasksByColumn]);
+  }, [tasks, columns, boardId, moveTask, createActivity, getTasksByColumn, dependencies]);
 
   // Find the board data from tasks array to display board info
   const board = tasks && tasks.length > 0 
