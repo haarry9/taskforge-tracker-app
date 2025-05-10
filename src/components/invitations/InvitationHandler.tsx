@@ -10,7 +10,7 @@ import { Check, X } from 'lucide-react';
 type InvitationAction = 'accept' | 'decline';
 
 export function InvitationHandler() {
-  const { invitationId, action } = useParams<{ invitationId: string, action: InvitationAction }>();
+  const { invitationId, action } = useParams<{ invitationId: string, action: string }>();
   const { user, isLoading: isAuthLoading } = useAuth();
   const { useUpdateInvitationStatusMutation } = useBoards();
   const updateInvitation = useUpdateInvitationStatusMutation();
@@ -40,9 +40,12 @@ export function InvitationHandler() {
       }
       
       try {
+        // Map the action to the expected status format
+        const statusValue = action === 'accept' ? 'accepted' : 'declined';
+        
         const result = await updateInvitation.mutateAsync({
           invitationId,
-          status: action
+          status: statusValue
         });
         
         if (result) {
