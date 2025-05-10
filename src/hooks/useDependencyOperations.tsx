@@ -19,6 +19,8 @@ export function useDependencyOperations(boardId: string | undefined, tasks: Task
   const handleCreateDependencies = (taskId: string, dependencyIds: string[]) => {
     if (!dependencyIds || dependencyIds.length === 0) return;
     
+    console.log(`Creating dependencies for task ${taskId}:`, dependencyIds);
+    
     dependencyIds.forEach(dependencyId => {
       createDependency({
         dependent_task_id: taskId,
@@ -48,6 +50,8 @@ export function useDependencyOperations(boardId: string | undefined, tasks: Task
   const handleUpdateDependencies = (taskId: string, dependencyIds: string[]) => {
     if (!dependencyIds) return;
     
+    console.log(`Updating dependencies for task ${taskId}:`, dependencyIds);
+    
     // Get current dependencies
     const currentDeps = dependencies.filter(
       dep => dep.dependent_task_id === taskId
@@ -61,6 +65,9 @@ export function useDependencyOperations(boardId: string | undefined, tasks: Task
     const depsToRemove = currentDeps.filter(
       dep => !dependencyIds.includes(dep.dependency_task_id)
     );
+    
+    console.log('Dependencies to add:', depsToAdd);
+    console.log('Dependencies to remove:', depsToRemove);
     
     // Add new dependencies
     depsToAdd.forEach(depId => {

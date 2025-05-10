@@ -77,9 +77,9 @@ export function useBoardPage(boardId: string | undefined) {
   };
 
   // Wrap handleCreateTask to handle dependencies
-  const onCreateTask = (taskData: any, dependencyIds?: string[]) => {
+  const onCreateTask = (taskData: NewTask, dependencyIds: string[]) => {
     handleCreateTask(taskData, {
-      onSuccess: (newTask: any) => {
+      onSuccess: (newTask) => {
         if (newTask && dependencyIds && dependencyIds.length > 0) {
           handleCreateDependencies(newTask.id, dependencyIds);
         }
@@ -88,11 +88,11 @@ export function useBoardPage(boardId: string | undefined) {
   };
 
   // Wrap handleUpdateTask to handle dependencies
-  const onUpdateTask = (taskData: any, dependencyIds?: string[]) => {
+  const onUpdateTask = (taskData: NewTask, dependencyIds: string[]) => {
     if (!currentTask) return;
     
     handleUpdateTask(taskData, {
-      onSuccess: (result: any) => {
+      onSuccess: (result) => {
         if (result && dependencyIds) {
           handleUpdateDependencies(currentTask.id, dependencyIds);
         }
@@ -145,3 +145,4 @@ export function useBoardPage(boardId: string | undefined) {
 
 // Type import needed for onEditTask
 import { Task } from '@/hooks/useTasks';
+import { NewTask } from '@/types/task-types';

@@ -42,7 +42,7 @@ export default function DependencySelect({
   availableTasks,
   selectedTaskIds,
   currentTaskId,
-  onSelectDependencies,
+  onSelectDependencies
 }: DependencySelectProps) {
   const [open, setOpen] = useState(false);
   const [tasksByColumn, setTasksByColumn] = useState<TasksByColumn>({});
@@ -96,6 +96,7 @@ export default function DependencySelect({
     
     setSelectedIds(updatedSelection);
     onSelectDependencies(updatedSelection);
+    // Don't close the popover so user can make multiple selections
   };
 
   const removeTask = (taskId: string, e: React.MouseEvent) => {

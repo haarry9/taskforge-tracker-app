@@ -15,7 +15,7 @@ import { useTaskDialog } from '@/hooks/useTaskDialog';
 interface TaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: NewTask, dependencyIds?: string[]) => void;
+  onSubmit: (data: NewTask, dependencyIds: string[]) => void;
   boardId: string;
   columnId: string;
   isEditing?: boolean;
