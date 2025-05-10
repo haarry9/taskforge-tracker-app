@@ -30,8 +30,9 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { UserPlus, User, Users, Clock } from 'lucide-react';
+import { UserPlus, User, Users, Clock, Mail, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/use-toast';
 
 const inviteFormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -65,6 +66,13 @@ export function BoardMembers({ boardId }: { boardId: string }) {
         setInviteDialogOpen(false);
         form.reset();
       },
+      onError: (error) => {
+        toast({
+          title: "Invitation failed",
+          description: error instanceof Error ? error.message : "Failed to send invitation",
+          variant: "destructive"
+        });
+      }
     });
   };
 
@@ -84,11 +92,26 @@ export function BoardMembers({ boardId }: { boardId: string }) {
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'accepted':
-        return <Badge className="bg-green-500">Accepted</Badge>;
+        return (
+          <div className="flex items-center gap-1 text-green-600">
+            <CheckCircle className="h-4 w-4" />
+            <span>Accepted</span>
+          </div>
+        );
       case 'pending':
-        return <Badge className="bg-yellow-500">Pending</Badge>;
+        return (
+          <div className="flex items-center gap-1 text-yellow-600">
+            <AlertCircle className="h-4 w-4" />
+            <span>Pending</span>
+          </div>
+        );
       case 'declined':
-        return <Badge className="bg-red-500">Declined</Badge>;
+        return (
+          <div className="flex items-center gap-1 text-red-600">
+            <XCircle className="h-4 w-4" />
+            <span>Declined</span>
+          </div>
+        );
       default:
         return null;
     }
@@ -176,13 +199,17 @@ export function BoardMembers({ boardId }: { boardId: string }) {
                   <p className="font-medium">{member.email}</p>
                   <div className="flex gap-2 mt-1">
                     {getRoleBadge(member.role)}
-                    {getStatusBadge(member.invitation_status)}
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-gray-500 flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
-                {new Date(member.invited_at).toLocaleDateString()}
+              <div className="flex flex-col items-end text-xs">
+                <div className="mb-1">
+                  {getStatusBadge(member.invitation_status)}
+                </div>
+                <div className="text-gray-500 flex items-center">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {new Date(member.invited_at).toLocaleDateString()}
+                </div>
               </div>
             </div>
           ))}

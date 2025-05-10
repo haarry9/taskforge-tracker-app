@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,7 @@ export default function Auth() {
   const { user, signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [redirect, setRedirect] = useState<string | null>(null);
 
   // Use the appropriate schema based on isLogin state
   const form = useForm<LoginFormValues | SignupFormValues>({
@@ -58,6 +58,28 @@ export default function Auth() {
   if (user) {
     return <Navigate to="/dashboard" />;
   }
+
+  useEffect(() => {
+    // After successful authentication, check for pending invitations
+    if (user) {
+      const pendingInvitation = sessionStorage.getItem('pendingInvitation');
+      if (pendingInvitation) {
+        try {
+          const { invitationId, action } = JSON.parse(pendingInvitation);
+          // Clear the pending invitation
+          sessionStorage.removeItem('pendingInvitation');
+          // Redirect to handle the invitation
+          navigate(`/invitations/${invitationId}/${action}`);
+          return;
+        } catch (e) {
+          console.error("Error processing pending invitation:", e);
+        }
+      }
+      
+      // Regular redirect if no pending invitation
+      navigate(redirect || '/dashboard');
+    }
+  }, [user, navigate, redirect]);
 
   return (
     <div className="min-h-screen flex flex-col bg-accent">
