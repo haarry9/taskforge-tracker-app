@@ -5,10 +5,10 @@ import {
   RouterProvider,
   Navigate,
 } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, AuthProvider } from '@/contexts/AuthContext';
 import Dashboard from '@/pages/Dashboard';
 import Auth from '@/pages/Auth';
-import Board from '@/pages/Board';
+import BoardPage from '@/pages/BoardPage';
 import { InvitationHandler } from "@/components/invitations/InvitationHandler";
 
 // A wrapper for routes that require authentication
@@ -49,7 +49,7 @@ const router = createBrowserRouter([
     path: "/board/:boardId",
     element: (
       <AuthRoute>
-        <Board />
+        <BoardPage />
       </AuthRoute>
     ),
   },
@@ -63,8 +63,13 @@ const router = createBrowserRouter([
   },
 ]);
 
+// Main App component that provides authentication context
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
 
 export default App;

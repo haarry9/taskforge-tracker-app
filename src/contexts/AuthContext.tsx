@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
@@ -20,7 +19,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Set up auth state listener first
@@ -30,9 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN') {
-          navigate('/dashboard');
+          window.location.href = '/dashboard';
         } else if (event === 'SIGNED_OUT') {
-          navigate('/');
+          window.location.href = '/';
         }
       }
     );
@@ -47,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
